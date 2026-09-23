@@ -10,6 +10,7 @@ dist-ssr/
 *.local
 .npm
 .vite/
+*.tsbuildinfo
 
 # Python / Backend
 __pycache__/
@@ -58,3 +59,4 @@ supabase/.temp/
 *.swo
 .DS_Store
 Thumbs.db
+

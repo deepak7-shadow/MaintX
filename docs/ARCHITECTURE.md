@@ -43,3 +43,4 @@ The persistent database comprises 18 relational tables managed under Supabase Po
 17. `change_policies`
 18. `notifications`
 19. `process_impact_assessments`
+
