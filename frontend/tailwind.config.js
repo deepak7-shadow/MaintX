@@ -22,10 +22,10 @@ export default {
           100: '#f0f4fa',
         },
         risk: {
-          low: '#10b981',      // Emerald / Green
-          medium: '#f59e0b',   // Amber / Yellow
-          high: '#f97316',     // Orange
-          critical: '#ef4444', // Red
+          low: '#10b981',
+          medium: '#f59e0b',
+          high: '#f97316',
+          critical: '#ef4444',
         },
         integrity: {
           verified: '#10b981',
@@ -37,9 +37,15 @@ export default {
       fontFamily: {
         mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
+      animation: {
+        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'spin-slow': 'spin 3s linear infinite',
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
       }
     },
   },
   plugins: [],
 }
-
