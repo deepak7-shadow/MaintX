@@ -1,4 +1,4 @@
-import { Cpu, ShieldCheck, AlertOctagon, CheckCircle2, Hash } from 'lucide-react';
+import { Cpu, ShieldCheck, AlertOctagon, CheckCircle2, Hash, History } from 'lucide-react';
 import { PLC_RESULTS } from '../lib/mockData';
 import { Badge, Card, HashChip, SectionHeader } from '../components/ui';
 import type { PLCStatus } from '../lib/types';
@@ -16,8 +16,14 @@ const statusBg = (s: PLCStatus) => {
 };
 
 export function PLCIntegrityPage() {
-  const violations = PLC_RESULTS.filter(r => r.integrity_status !== 'VERIFIED');
-  const verified = PLC_RESULTS.filter(r => r.integrity_status === 'VERIFIED');
+  // Derive hash_match by comparing the actual hash strings — never trust the stored boolean.
+  const resultsWithDerivedMatch = PLC_RESULTS.map(r => ({
+    ...r,
+    hash_match: r.baseline_hash === r.current_hash,
+  }));
+
+  const violations = resultsWithDerivedMatch.filter(r => r.integrity_status !== 'VERIFIED');
+  const verified = resultsWithDerivedMatch.filter(r => r.integrity_status === 'VERIFIED');
 
   return (
     <div className="space-y-6">
@@ -57,7 +63,7 @@ export function PLCIntegrityPage() {
 
       {/* PLC Results */}
       <div className="space-y-4">
-        {PLC_RESULTS.map(r => (
+        {resultsWithDerivedMatch.map(r => (
           <Card key={r.machine_code} className={`p-5 ${statusBg(r.integrity_status)}`}>
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
@@ -103,7 +109,11 @@ export function PLCIntegrityPage() {
                   <span className="text-slate-400 font-mono uppercase text-[10px]">Current Hash</span>
                   <HashChip hash={r.current_hash} />
                 </div>
-                <div className="flex items-center justify-between p-2 bg-slate-900/60 border border-slate-800 rounded text-xs font-mono">
+                <div className={`flex items-center justify-between p-2 rounded text-xs font-mono border ${
+                  r.hash_match
+                    ? 'bg-emerald-950/30 border-emerald-700/40'
+                    : 'bg-rose-950/30 border-rose-700/50'
+                }`}>
                   <span className="text-slate-400 uppercase text-[10px]">Hash Match</span>
                   <span className={r.hash_match ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
                     {r.hash_match ? '✓ MATCH' : '✗ MISMATCH'}
@@ -147,12 +157,26 @@ export function PLCIntegrityPage() {
                 <span className="text-slate-500 w-20 flex-shrink-0">BASELINE:</span>
                 <span className="text-slate-400 break-all">{r.baseline_hash}</span>
               </div>
-              <div className="flex items-center gap-2 text-[10px] font-mono">
+              <div className="flex items-start gap-2 text-[10px] font-mono">
                 <span className="text-slate-500 w-20 flex-shrink-0">CURRENT:</span>
                 <span className={`break-all ${r.hash_match ? 'text-emerald-400' : 'text-rose-400'}`}>
                   {r.current_hash}
                 </span>
               </div>
+              {r.previous_hash && (
+                <div className="mt-2 pt-2 border-t border-slate-800">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <History className="w-3 h-3 text-slate-500" />
+                    <span className="text-[9px] font-mono text-slate-600 uppercase tracking-widest">
+                      Previous Version ({r.previous_version}) Hash
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2 text-[10px] font-mono">
+                    <span className="text-slate-600 w-20 flex-shrink-0">PREVIOUS:</span>
+                    <span className="text-slate-600 break-all">{r.previous_hash}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         ))}
