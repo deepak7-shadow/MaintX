@@ -2,7 +2,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   ShieldCheck, LayoutDashboard, Server, Wrench, Cpu,
   Search, BookOpen, BarChart3, FileText, Bell,
-  LogOut, Menu, X
+  LogOut, Menu, X, Film, ExternalLink
 } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { useSimulation } from '../lib/simulationStore';
@@ -200,6 +200,26 @@ export function TopBar({
           <span className="text-slate-400">PLC GATE:</span>
           <span className="text-cyan-400 font-semibold">ENFORCED</span>
         </div>
+
+        <NavLink
+          to="/intro"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-800/50 hover:border-cyan-500 text-[10px] font-mono text-cyan-300 hover:text-white transition shadow-sm"
+          title="Replay HackfiniX 2026 Intro Experience"
+        >
+          <Film className="w-3 h-3 text-cyan-400" />
+          <span className="hidden sm:inline font-semibold tracking-wider">REPLAY INTRO</span>
+        </NavLink>
+
+        <a
+          href="/simulator.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-800/50 hover:border-emerald-500 text-[10px] font-mono text-emerald-300 hover:text-white transition shadow-sm"
+          title="Open Live PLC Simulator in New Tab"
+        >
+          <ExternalLink className="w-3 h-3 text-emerald-400" />
+          <span className="hidden sm:inline font-semibold tracking-wider">SIMULATOR TAB</span>
+        </a>
 
         <NavLink
           to="/notifications"

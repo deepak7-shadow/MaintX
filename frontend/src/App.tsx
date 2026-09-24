@@ -11,6 +11,7 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { LoginPage } from './pages/LoginPage';
+import { IntroExperience } from './pages/intro/IntroExperience';
 import type { UserRole } from './lib/types';
 
 interface AuthUser {
@@ -56,9 +57,9 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Root Redirect to SOC Dashboard */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/experience" element={<Navigate to="/dashboard" replace />} />
+        {/* Cinematic Intro Experience */}
+        <Route path="/" element={<IntroExperience />} />
+        <Route path="/intro" element={<IntroExperience />} />
 
         {/* Public Login Route */}
         <Route

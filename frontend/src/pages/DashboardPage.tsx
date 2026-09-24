@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Server, Wrench, Cpu, AlertTriangle,
   ShieldCheck, CheckCircle2, Activity, GitCompare,
-  TrendingUp, Hash, AlertOctagon
+  TrendingUp, Hash, AlertOctagon, ExternalLink
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -185,6 +185,17 @@ export function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <a
+            href="/simulator.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-600/50 hover:border-cyan-400 text-cyan-300 hover:text-white transition shadow-sm"
+            title="Open Live Simulator in New Tab"
+          >
+            <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Launch Simulator ↗</span>
+          </a>
+
           <button
             onClick={resetSimulation}
             className="px-2.5 py-1.5 rounded-lg text-xs font-mono text-slate-400 hover:text-slate-200 border border-slate-800 hover:border-slate-700 bg-slate-900/50 transition"
