@@ -8,10 +8,7 @@ import {
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
 import { Link } from 'react-router-dom';
-import {
-  DASHBOARD_STATS, RISK_TREND_DATA, CATEGORY_DISTRIBUTION,
-  MACHINE_RISK_DATA, SESSIONS, NOTIFICATIONS
-} from '../lib/mockData';
+import { useSimulation } from '../lib/simulationStore';
 import { Badge, Card, RiskBar } from '../components/ui';
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
@@ -56,7 +53,16 @@ function StatCard({
 // ─── Dashboard Page ───────────────────────────────────────────────────────────
 
 export function DashboardPage() {
-  const s = DASHBOARD_STATS;
+  const {
+    stats: s,
+    sessions,
+    notifications,
+    riskTrendData,
+    categoryDistribution,
+    machineRiskData,
+    activeSimSession,
+    resetSimulation
+  } = useSimulation();
 
   const STATS = [
     {
@@ -135,7 +141,7 @@ export function DashboardPage() {
     },
   ];
 
-  const criticalAlerts = NOTIFICATIONS.filter(n => n.type === 'CRITICAL' && !n.read);
+  const criticalAlerts = notifications.filter(n => n.type === 'CRITICAL' && !n.read);
 
   return (
     <div className="space-y-6">
@@ -159,13 +165,33 @@ export function DashboardPage() {
       )}
 
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <LayoutDashboard className="w-5 h-5 text-cyan-400" />
-        <div>
-          <h1 className="text-xl font-bold text-white">Security Operations Dashboard</h1>
-          <p className="text-xs text-slate-400 mt-0.5 font-mono">
-            CNC Sector · Real-time ICS/SCADA monitoring · Zero-Trust Maintenance
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <LayoutDashboard className="w-5 h-5 text-cyan-400" />
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-white">Security Operations Dashboard</h1>
+              {activeSimSession.active && (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-950/80 border border-rose-500/60 text-rose-300 animate-pulse">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                  LIVE SIMULATION: {activeSimSession.machine} ({activeSimSession.job})
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5 font-mono">
+              CNC Sector · Real-time ICS/SCADA monitoring · Zero-Trust Maintenance
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={resetSimulation}
+            className="px-2.5 py-1.5 rounded-lg text-xs font-mono text-slate-400 hover:text-slate-200 border border-slate-800 hover:border-slate-700 bg-slate-900/50 transition"
+            title="Reset simulation data back to initial baseline"
+          >
+            Reset
+          </button>
         </div>
       </div>
 
@@ -188,7 +214,7 @@ export function DashboardPage() {
             <span className="text-[10px] text-slate-500 font-mono">ALL MACHINES</span>
           </div>
           <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={RISK_TREND_DATA} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+            <AreaChart data={riskTrendData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="critical" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.4} />
@@ -229,13 +255,13 @@ export function DashboardPage() {
           <ResponsiveContainer width="100%" height={170}>
             <PieChart>
               <Pie
-                data={CATEGORY_DISTRIBUTION}
+                data={categoryDistribution}
                 innerRadius={50}
                 outerRadius={80}
                 dataKey="value"
                 paddingAngle={3}
               >
-                {CATEGORY_DISTRIBUTION.map((entry, index) => (
+                {categoryDistribution.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} stroke="transparent" />
                 ))}
               </Pie>
@@ -245,7 +271,7 @@ export function DashboardPage() {
             </PieChart>
           </ResponsiveContainer>
           <div className="space-y-1 mt-2">
-            {CATEGORY_DISTRIBUTION.map(cat => (
+            {categoryDistribution.map(cat => (
               <div key={cat.name} className="flex items-center justify-between text-[10px] font-mono">
                 <span className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cat.color }} />
@@ -267,7 +293,7 @@ export function DashboardPage() {
             <span className="text-sm font-semibold text-white">Machine Risk Scores</span>
           </div>
           <div className="space-y-3">
-            {MACHINE_RISK_DATA.map(m => (
+            {machineRiskData.map(m => (
               <div key={m.machine}>
                 <div className="flex items-center justify-between text-xs mb-1">
                   <Link to={`/machines/${m.machine}`} className="font-mono text-slate-300 hover:text-cyan-400 transition">
@@ -295,7 +321,7 @@ export function DashboardPage() {
             </Link>
           </div>
           <div className="space-y-2">
-            {SESSIONS.slice(0, 4).map(s => (
+            {sessions.slice(0, 4).map(s => (
               <Link
                 key={s.id}
                 to={`/maintenance/${s.id}`}

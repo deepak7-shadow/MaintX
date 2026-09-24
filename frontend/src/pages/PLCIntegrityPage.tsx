@@ -1,5 +1,5 @@
 import { Cpu, ShieldCheck, AlertOctagon, CheckCircle2, Hash, History } from 'lucide-react';
-import { PLC_RESULTS } from '../lib/mockData';
+import { useSimulation } from '../lib/simulationStore';
 import { Badge, Card, HashChip, SectionHeader } from '../components/ui';
 import type { PLCStatus } from '../lib/types';
 
@@ -16,6 +16,7 @@ const statusBg = (s: PLCStatus) => {
 };
 
 export function PLCIntegrityPage() {
+  const { plcResults: PLC_RESULTS } = useSimulation();
   // Derive hash_match by comparing the actual hash strings — never trust the stored boolean.
   const resultsWithDerivedMatch = PLC_RESULTS.map(r => ({
     ...r,

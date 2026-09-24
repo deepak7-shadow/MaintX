@@ -4,7 +4,7 @@ import {
   Server, Search, Filter, Cpu, Activity,
   Thermometer, Gauge, Wifi, ChevronRight, Shield, Clock
 } from 'lucide-react';
-import { MACHINES, SESSIONS, CHANGES, PLC_RESULTS } from '../lib/mockData';
+import { useSimulation } from '../lib/simulationStore';
 import { Badge, Card, StatusDot, SectionHeader, RiskBar } from '../components/ui';
 import type { Machine } from '../lib/types';
 
@@ -61,10 +61,11 @@ function MachineCard({ m }: { m: Machine }) {
 // ─── Machines List Page ───────────────────────────────────────────────────────
 
 export function MachinesPage() {
+  const { machines } = useSimulation();
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
-  const filtered = MACHINES.filter(m => {
+  const filtered = machines.filter(m => {
     const q = query.toLowerCase();
     const matchQ = !q || m.machine_code.toLowerCase().includes(q) || m.name.toLowerCase().includes(q) || m.sector.toLowerCase().includes(q);
     const matchS = statusFilter === 'ALL' || m.status === statusFilter;
@@ -76,7 +77,7 @@ export function MachinesPage() {
       <SectionHeader
         icon={<Server className="w-5 h-5" />}
         title="Machine Registry"
-        subtitle={`${MACHINES.length} registered assets across ${new Set(MACHINES.map(m => m.sector)).size} sectors`}
+        subtitle={`${machines.length} registered assets across ${new Set(machines.map(m => m.sector)).size} sectors`}
       />
 
       {/* Filters */}
@@ -120,7 +121,8 @@ export function MachinesPage() {
 
 export function MachineDetailPage() {
   const { code } = useParams<{ code: string }>();
-  const machine = MACHINES.find(m => m.machine_code === code);
+  const { machines, sessions: allSessions, changes: allChanges, plcResults } = useSimulation();
+  const machine = machines.find(m => m.machine_code === code);
 
   if (!machine) {
     return (
@@ -130,9 +132,9 @@ export function MachineDetailPage() {
     );
   }
 
-  const sessions = SESSIONS.filter(s => s.machine_code === machine.machine_code);
-  const changes = CHANGES.filter(c => c.machine_code === machine.machine_code);
-  const plcResult = PLC_RESULTS.find(p => p.machine_code === machine.machine_code);
+  const sessions = allSessions.filter(s => s.machine_code === machine.machine_code);
+  const changes = allChanges.filter(c => c.machine_code === machine.machine_code);
+  const plcResult = plcResults.find(p => p.machine_code === machine.machine_code);
 
   return (
     <div className="space-y-6">

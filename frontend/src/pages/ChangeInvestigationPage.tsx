@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Search, Filter, AlertOctagon, AlertTriangle, Activity, User, Clock } from 'lucide-react';
-import { CHANGES } from '../lib/mockData';
+import { useSimulation } from '../lib/simulationStore';
 import { Badge, Card, RiskBar, SectionHeader } from '../components/ui';
 import type { RiskLevel, ChangeCategory } from '../lib/types';
 
@@ -14,6 +14,7 @@ const CATEGORY_COLORS: Record<ChangeCategory, string> = {
 };
 
 export function ChangeInvestigationPage() {
+  const { changes: CHANGES } = useSimulation();
   const [query, setQuery] = useState('');
   const [riskFilter, setRiskFilter] = useState<string>('ALL');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');

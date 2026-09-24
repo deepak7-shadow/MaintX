@@ -98,7 +98,7 @@ export function RiskBar({ score }: { score: number }) {
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`bg-[#0f1524] border border-slate-800 rounded-xl ${className}`}>
+    <div className={`bg-[#0a0f1d]/85 backdrop-blur-md border border-slate-800/80 hover:border-slate-700/80 shadow-lg shadow-black/25 rounded-xl transition-all duration-200 ${className}`}>
       {children}
     </div>
   );

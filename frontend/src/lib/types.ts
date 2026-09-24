@@ -83,6 +83,8 @@ export interface PLCIntegrityResult {
   current_version: string;
   baseline_hash: string;
   current_hash: string;
+  previous_version?: string;
+  previous_hash?: string;
   hash_match: boolean;
   integrity_status: PLCStatus;
   integrity_message: string;

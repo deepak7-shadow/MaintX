@@ -4,7 +4,7 @@ import {
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell, RadarChart,
   PolarGrid, PolarAngleAxis, Radar
 } from 'recharts';
-import { RISK_TREND_DATA, CATEGORY_DISTRIBUTION, MACHINE_RISK_DATA, VERIFICATION_HISTORY } from '../lib/mockData';
+import { useSimulation } from '../lib/simulationStore';
 import { Card, SectionHeader } from '../components/ui';
 
 const RADAR_DATA = [
@@ -17,6 +17,15 @@ const RADAR_DATA = [
 ];
 
 export function AnalyticsPage() {
+  const {
+    riskTrendData,
+    categoryDistribution,
+    machineRiskData,
+    verificationHistory,
+    stats,
+    changes,
+  } = useSimulation();
+
   return (
     <div className="space-y-6">
       <SectionHeader
@@ -28,10 +37,10 @@ export function AnalyticsPage() {
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'Total Changes (MTD)', value: '34', delta: '+6 today', color: 'text-cyan-400' },
-          { label: 'Avg Risk Score', value: '41', delta: '↑ from 38', color: 'text-amber-400' },
-          { label: 'Verification Rate', value: '87%', delta: '7/8 sessions', color: 'text-emerald-400' },
-          { label: 'Unauthorized Rate', value: '6%', delta: '2 of 34 changes', color: 'text-rose-400' },
+          { label: 'Total Tracked Changes', value: `${changes.length}`, delta: `${stats.changes_today} in current session`, color: 'text-cyan-400' },
+          { label: 'Critical Violations', value: `${stats.critical_changes}`, delta: stats.critical_changes > 0 ? 'Action required' : 'Nominal', color: 'text-rose-400' },
+          { label: 'Verified Machines', value: `${stats.verified_machines}/${stats.total_machines}`, delta: 'Baseline certified', color: 'text-emerald-400' },
+          { label: 'Unauthorized Changes', value: `${stats.unresolved_changes}`, delta: `${stats.unresolved_changes} flagged for review`, color: stats.unresolved_changes > 0 ? 'text-amber-400' : 'text-slate-400' },
         ].map((k, i) => (
           <Card key={i} className="p-4">
             <p className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">{k.label}</p>
@@ -50,7 +59,7 @@ export function AnalyticsPage() {
             <span className="text-sm font-semibold text-white">7-Day Risk Trend by Level</span>
           </div>
           <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={RISK_TREND_DATA} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+            <AreaChart data={riskTrendData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
               <defs>
                 {[
                   { id: 'critical', color: '#f43f5e' },
@@ -83,7 +92,7 @@ export function AnalyticsPage() {
             <span className="text-sm font-semibold text-white">Verification Outcomes (6 Months)</span>
           </div>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={VERIFICATION_HISTORY} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+            <BarChart data={verificationHistory} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
               <XAxis dataKey="month" tick={{ fill: '#64748b', fontSize: 10 }} />
               <YAxis tick={{ fill: '#64748b', fontSize: 10 }} />
@@ -105,13 +114,13 @@ export function AnalyticsPage() {
             <span className="text-sm font-semibold text-white">Machine Risk Scores</span>
           </div>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={MACHINE_RISK_DATA} layout="vertical" margin={{ top: 0, right: 10, left: 20, bottom: 0 }}>
+            <BarChart data={machineRiskData} layout="vertical" margin={{ top: 0, right: 10, left: 20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
               <XAxis type="number" domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 10 }} />
               <YAxis dataKey="machine" type="category" tick={{ fill: '#94a3b8', fontSize: 10 }} />
               <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: 8, fontSize: 11 }} />
               <Bar dataKey="score" name="Risk Score" radius={[0, 4, 4, 0]}>
-                {MACHINE_RISK_DATA.map((entry, index) => (
+                {machineRiskData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={entry.score >= 85 ? '#f43f5e' : entry.score >= 60 ? '#f59e0b' : entry.score >= 30 ? '#eab308' : '#10b981'}
@@ -131,13 +140,13 @@ export function AnalyticsPage() {
           <ResponsiveContainer width="100%" height={160}>
             <PieChart>
               <Pie
-                data={CATEGORY_DISTRIBUTION}
+                data={categoryDistribution}
                 innerRadius={45}
                 outerRadius={75}
                 dataKey="value"
                 paddingAngle={3}
               >
-                {CATEGORY_DISTRIBUTION.map((entry, index) => (
+                {categoryDistribution.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} stroke="transparent" />
                 ))}
               </Pie>
@@ -145,7 +154,7 @@ export function AnalyticsPage() {
             </PieChart>
           </ResponsiveContainer>
           <div className="space-y-1 mt-2">
-            {CATEGORY_DISTRIBUTION.map(cat => (
+            {categoryDistribution.map(cat => (
               <div key={cat.name} className="flex items-center justify-between text-[10px] font-mono">
                 <span className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cat.color }} />

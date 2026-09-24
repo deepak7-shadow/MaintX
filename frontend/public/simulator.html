@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>MaintX — Maintenance Mode Simulator</title>
+  <style>
+    :root {
+      --dark: #0B2A2E;
+      --dark2: #0F3A3F;
+      --teal: #0E7C86;
+      --teal-l: #3FA796;
+      --bg: #F4F7F7;
+      --card: #FFFFFF;
+      --txt: #16222A;
+      --muted: #5C6B70;
+      --amber: #C9821A;
+      --amber-bg: #FBF1DF;
+      --red: #C43D30;
+      --red-bg: #FBE6E3;
+      --good-bg: #E4F3EF;
+      --info-bg: #EDF2F2;
+      --line: #DCE4E5;
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0D1417;
+        --card: #152025;
+        --txt: #E7EEEC;
+        --muted: #93A5A2;
+        --line: #243033;
+        --info-bg: #1B2528;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0D1417;
+      --card: #152025;
+      --txt: #E7EEEC;
+      --muted: #93A5A2;
+      --line: #243033;
+      --info-bg: #1B2528;
+    }
+
+    html {
+      scroll-padding-top: env(safe-area-inset-top, 0px);
+      height: 100%;
+    }
+
+    body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--txt);
+      font-family: -apple-system, Segoe UI, Calibri, sans-serif;
+      font-size: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 20px 40px;
+    }
+
+    /* ---- header ---- */
+    header {
+      background: var(--dark);
+      color: #fff;
+      padding: 18px 20px;
+      padding-top: calc(18px + env(safe-area-inset-top, 0px));
+    }
+
+    header .inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .brand b {
+      font-size: 19px;
+      letter-spacing: .2px;
+    }
+
+    .brand span {
+      font-size: 11.5px;
+      color: var(--teal-l);
+    }
+
+    .jobmeta {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: #CFE3E1;
+    }
+
+    .jobmeta b {
+      color: #fff;
+      font-size: 12.5px;
+    }
+
+    .hcontrols {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    input[type=text] {
+      background: var(--dark2);
+      border: 1px solid #1E5158;
+      color: #fff;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 12.5px;
+    }
+
+    button {
+      font: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      border-radius: 6px;
+      padding: 8px 14px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: filter .12s ease;
+    }
+
+    button:hover {
+      filter: brightness(1.08);
+    }
+
+    button:active {
+      filter: brightness(0.95);
+    }
+
+    button.primary {
+      background: var(--teal);
+      color: #fff;
+    }
+
+    button.ghost {
+      background: transparent;
+      border-color: #2C5C61;
+      color: #CFE3E1;
+    }
+
+    button.danger {
+      background: var(--red);
+      color: #fff;
+    }
+
+    button:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    .badge {
+      padding: 5px 11px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: .3px;
+    }
+
+    .badge.LOW {
+      background: var(--good-bg);
+      color: #1F7A63;
+    }
+
+    .badge.MEDIUM {
+      background: var(--amber-bg);
+      color: var(--amber);
+    }
+
+    .badge.HIGH {
+      background: var(--red-bg);
+      color: var(--red);
+    }
+
+    .badge.CRITICAL {
+      background: var(--red);
+      color: #fff;
+    }
+
+    .badge.IDLE {
+      background: #2C3F42;
+      color: #B7C9C7;
+    }
+
+    .badge.ACTIVE {
+      background: var(--teal-l);
+      color: #06302B;
+    }
+
+    /* ---- layout ---- */
+    .grid {
+      display: grid;
+      grid-template-columns: 290px 1fr 340px;
+      gap: 18px;
+      margin-top: 20px;
+    }
+
+    @media (max-width:980px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .card h3 {
+      margin: 0 0 12px;
+      font-size: 13px;
+      letter-spacing: .3px;
+      color: var(--teal);
+      text-transform: uppercase;
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* plan panel */
+    .plan-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .plan-item .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--muted);
+      margin-top: 5px;
+      flex: none;
+    }
+
+    .plan-item.done .dot {
+      background: var(--teal-l);
+    }
+
+    .plan-item .t {
+      font-weight: 700;
+      font-size: 12.5px;
+    }
+
+    .plan-item .d {
+      color: var(--muted);
+      font-size: 11.5px;
+      margin-top: 2px;
+    }
+
+    /* controls */
+    .ctrl {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+
+    .ctrl-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .ctrl-name {
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .ctrl-val {
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    .status-chip {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+    }
+
+    .status-chip.good {
+      background: var(--good-bg);
+      color: #1F7A63;
+    }
+
+    .status-chip.info {
+      background: var(--info-bg);
+      color: var(--muted);
+    }
+
+    .status-chip.warning {
+      background: var(--amber-bg);
+      color: var(--amber);
+    }
+
+    .status-chip.critical {
+      background: var(--red-bg);
+      color: var(--red);
+    }
+
+    input[type=range] {
+      width: 100%;
+      accent-color: var(--teal);
+    }
+
+    select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--txt);
+      font-size: 12.5px;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toggle {
+      position: relative;
+      width: 46px;
+      height: 24px;
+      flex: none;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle .track {
+      position: absolute;
+      inset: 0;
+      background: #8FA6A3;
+      border-radius: 20px;
+      transition: .15s;
+      cursor: pointer;
+    }
+
+    .toggle .track:before {
+      content: "";
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      left: 3px;
+      top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: .15s;
+    }
+
+    .toggle input:checked+.track {
+      background: var(--teal-l);
+    }
+
+    .toggle input:checked+.track:before {
+      transform: translateX(22px);
+    }
+
+    .approved-hint {
+      font-size: 10.5px;
+      color: var(--teal);
+      margin-top: 6px;
+    }
+
+    /* log */
+    .log {
+      max-height: 340px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 2px;
+    }
+
+    .logrow {
+      border-left: 3px solid var(--line);
+      padding: 7px 10px;
+      border-radius: 0 6px 6px 0;
+      background: var(--info-bg);
+    }
+
+    .logrow.good {
+      border-color: var(--teal-l);
+    }
+
+    .logrow.warning {
+      border-color: var(--amber);
+      background: var(--amber-bg);
+    }
+
+    .logrow.critical {
+      border-color: var(--red);
+      background: var(--red-bg);
+    }
+
+    .logrow .m {
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .logrow .meta {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 3px;
+      font-family: ui-monospace, Consolas, monospace;
+    }
+
+    .inbox-item {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      font-size: 11.5px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .inbox-item:last-child {
+      border-bottom: none;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 12px;
+      padding: 8px 2px;
+    }
+
+    /* toast */
+    #toastHost {
+      position: fixed;
+      top: calc(16px + env(safe-area-inset-top, 0px));
+      right: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 50;
+    }
+
+    .toast {
+      min-width: 280px;
+      max-width: 360px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      color: #fff;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, .18);
+      font-size: 12.5px;
+      line-height: 1.4;
+      animation: slidein .18s ease-out;
+    }
+
+    .toast.warning {
+      background: var(--amber);
+    }
+
+    .toast.critical {
+      background: var(--red);
+    }
+
+    .toast.good {
+      background: var(--teal);
+    }
+
+    @keyframes slidein {
+      from {
+        transform: translateX(30px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    details {
+      margin-top: 24px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--teal);
+    }
+
+    pre {
+      background: var(--dark);
+      color: #CFE3E1;
+      padding: 12px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 11.5px;
+      line-height: 1.5;
+    }
+
+    code {
+      font-family: ui-monospace, Consolas, monospace;
+    }
+
+    details p {
+      font-size: 12.5px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="toastHost"></div>
+
+  <header>
+    <div class="inner">
+      <div class="brand"><b>MaintX Simulator</b><span>Maintenance mode · live machine controls</span></div>
+      <div class="jobmeta">
+        <div>Machine: <b id="mMachine">CNC-01</b></div>
+        <div>Job: <b id="mJob">MNT-2031</b></div>
+        <div>Engineer: <input id="engineerInput" type="text" value="Rahul Sharma" style="width:130px"></div>
+      </div>
+      <div class="hcontrols">
+        <span class="badge" id="socSyncBadge" style="background:#0b3a36;color:#3fa796;border:1px solid #1f7a63;" title="Cross-tab bridge active with MaintX SOC app">🟢 SOC SYNC ACTIVE</span>
+        <span class="badge IDLE" id="sessionBadge">SESSION IDLE</span>
+        <span class="badge LOW" id="riskBadge">RISK: —</span>
+        <button class="primary" id="startBtn">Start Maintenance</button>
+        <button class="danger" id="endBtn" disabled>End &amp; Verify</button>
+        <button class="ghost" id="demoBtn">Run Demo Script</button>
+        <a href="/dashboard" target="_blank" class="ghost" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;font-size:12px;border-radius:6px;color:#fff;border:1px solid var(--teal);" title="Switch to MaintX SOC Dashboard in another tab">🖥️ Open SOC App &rarr;</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="grid">
+
+      <!-- PLAN -->
+      <div class="card">
+        <h3>Approved Plan</h3>
+        <div class="stack" id="planList"></div>
+        <h3 style="margin-top:18px;">Supervisor Inbox</h3>
+        <div id="inboxList">
+          <div class="empty">No alerts sent yet.</div>
+        </div>
+      </div>
+
+      <!-- CONTROLS -->
+      <div class="card">
+        <h3>Machine Controls</h3>
+        <div class="stack" id="controlsList"></div>
+      </div>
+
+      <!-- LOG -->
+      <div class="card">
+        <h3>Tamper-Evident Security Logbook</h3>
+        <div class="log" id="logList">
+          <div class="empty">Start a maintenance session to begin logging.</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button class="ghost" id="verifyBtn" style="flex:1;">Verify Chain Integrity</button>
+          <button class="ghost" id="tamperBtn" style="flex:1;">Simulate Tampering</button>
+        </div>
+        <div id="verifyResult" style="margin-top:8px;font-size:11.5px;"></div>
+      </div>
+
+    </div>
+
+    <details>
+      <summary>Integration guide — wiring this into your main app</summary>
+      <p>The simulator never assumes how your main app is built. It talks outward through two channels — pick whichever
+        fits.</p>
+
+      <p><b>1. Embed as an iframe and listen for postMessage events.</b> Every session start, approved change,
+        unauthorized change, and session close is broadcast to the parent window:</p>
+      <pre><code>&lt;iframe src="maintx-simulator.html" id="sim"&gt;&lt;/iframe&gt;
+
+&lt;script&gt;
+window.addEventListener('message', (e) =&gt; {
+  if (e.data?.source !== 'maintx-simulator') return;
+  const { type, payload } = e.data;
+  // type: 'session_start' | 'change' | 'session_end' | 'log_integrity'
+  if (type === 'change' &amp;&amp; payload.status === 'unauthorized') {
+    // forward to your backend, e.g.
+    fetch('/api/maintenance/' + payload.job + '/alert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  }
+});
+&lt;/script&gt;</code></pre>
+
+      <p><b>2. Same-document embedding.</b> If you include this file's script directly in your app instead of an iframe,
+        it also exposes <code>window.MaintXSimulator</code>:</p>
+      <pre><code>window.MaintXSimulator.onEvent((type, payload) =&gt; { /* ... */ });
+window.MaintXSimulator.getState();   // current controls, log, risk score
+window.MaintXSimulator.loadPlan([{controlId, approvedValue, label}]);</code></pre>
+
+      <p><b>3. Direct webhook.</b> Enter a URL in the field below the log panel and unauthorized-change alerts will also
+        be POSTed there as JSON, in addition to the postMessage broadcast. Note: when this page is running inside a
+        hosted preview with a locked-down content-security-policy, cross-origin POSTs may be blocked — this works once
+        the file is served from, or embedded in, your own app.</p>
+
+      <p>Each logbook entry is chained with <code>SHA-256(previousHash + eventData)</code>, so editing an old entry
+        breaks every hash after it — "Verify Chain Integrity" recomputes the chain and reports the first broken link,
+        and "Simulate Tampering" mutates a past entry so you can demo the failure.</p>
+    </details>
+
+    <div class="card" style="margin-top:18px;">
+      <h3>Webhook (optional)</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="webhookUrl" placeholder="https://your-app.example.com/api/alerts"
+          style="flex:1;min-width:240px;color:var(--txt);background:var(--card);border:1px solid var(--line);">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);">
+          <input type="checkbox" id="webhookEnabled"> send alerts here too
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      /* ---------- control + plan definitions ---------- */
+      const CONTROLS = [
+        {
+          id: 'motorSpeed', label: 'Motor Speed', unit: ' RPM', type: 'range', min: 2500, max: 4000, step: 10,
+          baseline: 3000, approved: 3200
+        },
+        {
+          id: 'plcVersion', label: 'PLC Version', type: 'select', options: ['v16', 'v17', 'v18', 'v19'],
+          baseline: 'v17', approved: 'v18'
+        },
+        {
+          id: 'tempLimit', label: 'Temperature Limit', unit: '°C', type: 'range', min: 60, max: 110, step: 1,
+          baseline: 80, approved: null
+        },
+        {
+          id: 'ipAddress', label: 'Network IP Address', type: 'select',
+          options: ['192.168.10.20', '192.168.10.21', '192.168.20.15', '10.0.0.50'],
+          baseline: '192.168.10.20', approved: null
+        },
+        {
+          id: 'safetyInterlock', label: 'Safety Interlock (N7)', type: 'toggle',
+          baseline: 'ON', approved: null, critical: true
+        },
+      ];
+
+      const state = {
+        active: false,
+        job: 'MNT-2031',
+        machine: 'CNC-01',
+        values: {},
+        log: [],          // {seq,status,severity,message,control,value,ts,hash,prevHash}
+        riskScore: 0,
+        listeners: [],
+        prevHash: 'GENESIS',
+      };
+      CONTROLS.forEach(c => state.values[c.id] = c.baseline);
+
+      /* ---------- hashing (SHA-256 with non-crypto fallback for file:// contexts) ---------- */
+      async function sha256(str) {
+        try {
+          if (window.crypto && window.crypto.subtle) {
+            const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+            return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+          }
+        } catch (e) { /* fall through */}
+        // fallback: FNV-1a, clearly not cryptographic, only for offline/demo contexts
+        let h = 0x811c9dc5;
+        for (let i = 0; i < str.length; i++) {h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193);}
+        return 'fnv1a-' + (h >>> 0).toString(16).padStart(8, '0');
+      }
+
+      /* ---------- messaging out to a host app & other tabs ---------- */
+      const SIM_BUS_NAME = 'maintx_sim_bus';
+      let simBus = null;
+      try {
+        if (typeof BroadcastChannel !== 'undefined') {
+          simBus = new BroadcastChannel(SIM_BUS_NAME);
+        }
+      } catch (e) {
+        console.warn('BroadcastChannel error:', e);
+      }
+
+      function emit(type, payload) {
+        state.listeners.forEach(fn => {try {fn(type, payload);} catch (e) { } });
+        
+        // 1. Post to parent window (if running in iframe)
+        try {
+          window.parent.postMessage({source: 'maintx-simulator', type, payload}, '*');
+        } catch (e) { }
+
+        // 2. Broadcast across tabs via BroadcastChannel
+        const packet = {
+          source: 'maintx-simulator',
+          type,
+          payload,
+          state: {
+            active: state.active,
+            job: state.job,
+            machine: state.machine,
+            engineer: engineerName(),
+            riskScore: state.riskScore,
+            logLength: state.log.length,
+            prevHash: state.prevHash
+          },
+          ts: Date.now()
+        };
+
+        if (simBus) {
+          try { simBus.postMessage(packet); } catch (e) { }
+        }
+
+        // 3. Dispatch to localStorage to guarantee cross-tab event in all browsers
+        try {
+          localStorage.setItem('maintx_sim_event', JSON.stringify(packet));
+        } catch (e) { }
+
+        if (type === 'change' && payload.status !== 'authorized') {
+          maybeSendWebhook(payload);
+        }
+      }
+
+      async function maybeSendWebhook(payload) {
+        const enabled = document.getElementById('webhookEnabled').checked;
+        const url = document.getElementById('webhookUrl').value.trim();
+        if (!enabled || !url) return;
+        try {
+          await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
+        } catch (e) {
+          pushInbox('Webhook delivery failed (' + (e.message || 'network blocked') + ') — event was still logged and broadcast via postMessage.');
+        }
+      }
+
+      window.MaintXSimulator = {
+        onEvent(fn) {state.listeners.push(fn);},
+        getState() {return JSON.parse(JSON.stringify({active: state.active, values: state.values, log: state.log, riskScore: state.riskScore}));},
+        loadPlan(items) { /* hook for host app to override approved targets at runtime */
+          items.forEach(it => {const c = CONTROLS.find(c => c.id === it.controlId); if (c) c.approved = it.approvedValue;});
+          renderControls();
+        }
+      };
+
+      /* ---------- rendering: plan ---------- */
+      function renderPlan() {
+        const el = document.getElementById('planList');
+        el.innerHTML = '';
+        CONTROLS.filter(c => c.approved !== null).forEach(c => {
+          const done = String(state.values[c.id]) === String(c.approved);
+          const row = document.createElement('div');
+          row.className = 'plan-item' + (done ? ' done' : '');
+          row.innerHTML = `<div class="dot"></div><div>
+        <div class="t">${c.label}</div>
+        <div class="d">${c.baseline}${c.unit || ''} &rarr; ${c.approved}${c.unit || ''} ${done ? '· done' : ''}</div>
+      </div>`;
+          el.appendChild(row);
+        });
+        const note = document.createElement('div');
+        note.className = 'd';
+        note.style.cssText = 'color:var(--muted);font-size:11px;margin-top:4px;';
+        note.textContent = 'Any other control change is outside this plan and will be flagged.';
+        el.appendChild(note);
+      }
+
+      /* ---------- rendering: controls ---------- */
+      function renderControls() {
+        const el = document.getElementById('controlsList');
+        el.innerHTML = '';
+        CONTROLS.forEach(c => {
+          const wrap = document.createElement('div');
+          wrap.className = 'ctrl';
+          const val = state.values[c.id];
+          const chip = chipFor(c, val);
+          let inputHtml = '';
+          if (c.type === 'range') {
+            inputHtml = `<input type="range" min="${c.min}" max="${c.max}" step="${c.step}" value="${val}" data-id="${c.id}">`;
+          } else if (c.type === 'select') {
+            inputHtml = `<select data-id="${c.id}">` + c.options.map(o => `<option value="${o}" ${o === val ? 'selected' : ''}>${o}</option>`).join('') + `</select>`;
+          } else if (c.type === 'toggle') {
+            inputHtml = `<div class="toggle-row"><label class="toggle"><input type="checkbox" data-id="${c.id}" ${val === 'ON' ? 'checked' : ''}><span class="track"></span></label><span>${val}</span></div>`;
+          }
+          wrap.innerHTML = `
+        <div class="ctrl-top">
+          <div><div class="ctrl-name">${c.label}</div><div class="ctrl-val">baseline: ${c.baseline}${c.unit || ''}</div></div>
+          <span class="status-chip ${chip.cls}">${chip.text}</span>
+        </div>
+        ${inputHtml}
+        ${c.approved !== null ? `<div class="approved-hint">Approved target: ${c.approved}${c.unit || ''}</div>` : ''}
+      `;
+          el.appendChild(wrap);
+        });
+        attachControlHandlers();
+      }
+
+      function chipFor(c, val) {
+        if (String(val) === String(c.baseline)) return {cls: 'info', text: 'No change'};
+        if (c.approved !== null && String(val) === String(c.approved)) return {cls: 'good', text: 'Authorized'};
+        return {cls: c.critical ? 'critical' : 'warning', text: c.critical ? 'Critical' : 'Unauthorized'};
+      }
+
+      function attachControlHandlers() {
+        document.querySelectorAll('[data-id]').forEach(inputEl => {
+          const evtName = 'change';
+          inputEl.addEventListener(evtName, () => {
+            if (!state.active) {
+              showToast('warning', 'Start a maintenance session before making changes.');
+              renderControls();
+              return;
+            }
+            const id = inputEl.getAttribute('data-id');
+            const def = CONTROLS.find(c => c.id === id);
+            let newVal = inputEl.type === 'checkbox' ? (inputEl.checked ? 'ON' : 'OFF') : inputEl.value;
+            if (def.type === 'range') newVal = Number(newVal);
+            handleChange(def, newVal);
+          });
+        });
+      }
+
+      /* ---------- change evaluation ---------- */
+      function handleChange(def, newVal) {
+        const oldVal = state.values[def.id];
+        if (String(newVal) === String(oldVal)) return;
+        state.values[def.id] = newVal;
+
+        let status, severity, message;
+        if (String(newVal) === String(def.baseline)) {
+          status = 'reverted'; severity = 'info';
+          message = `${def.label} restored to baseline (${def.baseline}${def.unit || ''})`;
+        } else if (def.approved !== null && String(newVal) === String(def.approved)) {
+          status = 'authorized'; severity = 'good';
+          message = `${def.label} changed to approved value ${newVal}${def.unit || ''}`;
+        } else {
+          status = 'unauthorized';
+          severity = def.critical ? 'critical' : 'warning';
+          message = `${def.label} changed to ${newVal}${def.unit || ''} — not in the approved plan`;
+        }
+
+        logEvent({status, severity, message, control: def.id, value: newVal});
+        renderControls();
+        renderPlan();
+
+        if (status === 'unauthorized') {
+          showToast(severity, (severity === 'critical' ? '⚠ CRITICAL — ' : '⚠ ') + message);
+          pushInbox(message + '  ·  sent to supervisor for review.');
+        }
+        emit('change', {job: state.job, machine: state.machine, engineer: engineerName(), ...{status, severity, message, control: def.id, value: newVal}, ts: new Date().toISOString()});
+        updateRisk();
+      }
+
+      /* ---------- risk ---------- */
+      function updateRisk() {
+        let score = 0;
+        state.log.forEach(e => {
+          if (e.severity === 'warning') score += 25;
+          if (e.severity === 'critical') score += 45;
+        });
+        score = Math.min(100, score);
+        state.riskScore = score;
+        const level = score >= 75 ? 'CRITICAL' : score >= 50 ? 'HIGH' : score >= 25 ? 'MEDIUM' : 'LOW';
+        const b = document.getElementById('riskBadge');
+        b.className = 'badge ' + level;
+        b.textContent = 'RISK: ' + level + ' (' + score + ')';
+      }
+
+      /* ---------- logbook with hash chain ---------- */
+      function payloadStrFor(r) {
+        return JSON.stringify({seq: r.seq, ts: r.ts, status: r.status, message: r.message, control: r.control || null, value: r.value !== undefined ? String(r.value) : null});
+      }
+
+      let chainPromise = Promise.resolve();
+      function logEvent(data) {
+        chainPromise = chainPromise.then(async () => {
+          const seq = state.log.length + 1;
+          const ts = new Date().toISOString();
+          const record = {seq, ts, ...data};
+          const hash = await sha256(state.prevHash + payloadStrFor(record));
+          record.prevHash = state.prevHash;
+          record.hash = hash;
+          state.prevHash = hash;
+          state.log.push(record);
+          renderLog();
+        });
+        return chainPromise;
+      }
+
+      function renderLog() {
+        const el = document.getElementById('logList');
+        if (state.log.length === 0) {el.innerHTML = '<div class="empty">Start a maintenance session to begin logging.</div>'; return;}
+        el.innerHTML = '';
+        state.log.slice().reverse().forEach(r => {
+          const row = document.createElement('div');
+          row.className = 'logrow ' + r.severity;
+          row.innerHTML = `<div class="m">#${r.seq} · ${r.message}</div><div class="meta">${new Date(r.ts).toLocaleTimeString()} · hash ${r.hash.slice(0, 10)}…</div>`;
+          el.appendChild(row);
+        });
+      }
+
+      function pushInbox(text) {
+        const el = document.getElementById('inboxList');
+        if (el.querySelector('.empty')) el.innerHTML = '';
+        const row = document.createElement('div');
+        row.className = 'inbox-item';
+        row.innerHTML = `<div>🔔</div><div>${text}</div>`;
+        el.prepend(row);
+      }
+
+      /* ---------- toast ---------- */
+      function showToast(severity, text) {
+        const host = document.getElementById('toastHost');
+        const t = document.createElement('div');
+        t.className = 'toast ' + severity;
+        t.textContent = text;
+        host.appendChild(t);
+        setTimeout(() => t.remove(), 4200);
+      }
+
+      /* ---------- chain verification & tamper demo ---------- */
+      async function verifyChain() {
+        let prev = 'GENESIS';
+        for (const r of state.log) {
+          const recomputed = await sha256(prev + payloadStrFor(r));
+          if (recomputed !== r.hash) {
+            document.getElementById('verifyResult').innerHTML =
+              `<span style="color:var(--red);font-weight:700;">✗ Broken at entry #${r.seq} — stored hash does not match recomputed hash. Chain compromised from this point forward.</span>`;
+            emit('log_integrity', {valid: false, brokenAt: r.seq});
+            return;
+          }
+          prev = r.hash;
+        }
+        document.getElementById('verifyResult').innerHTML =
+          `<span style="color:#1F7A63;font-weight:700;">✓ All ${state.log.length} entries verified — chain intact.</span>`;
+        emit('log_integrity', {valid: true, entries: state.log.length});
+      }
+
+      function simulateTamper() {
+        if (state.log.length === 0) {showToast('warning', 'No log entries yet to tamper with.'); return;}
+        const mid = state.log[Math.floor(state.log.length / 2)];
+        mid.message = mid.message + ' [secretly edited]';
+        // hash is NOT recomputed — this is the point of the demo
+        renderLog();
+        showToast('critical', `Simulated tampering applied to entry #${mid.seq}. Run "Verify Chain Integrity" to see it detected.`);
+        document.getElementById('verifyResult').textContent = '';
+        emit('log_integrity', { valid: false, brokenAt: mid.seq, machine: state.machine, job: state.job });
+      }
+
+      /* ---------- session lifecycle ---------- */
+      function engineerName() {return document.getElementById('engineerInput').value || 'Unassigned';}
+
+      function startSession() {
+        state.active = true;
+        state.log = [];
+        state.prevHash = 'GENESIS';
+        CONTROLS.forEach(c => state.values[c.id] = c.baseline);
+        document.getElementById('sessionBadge').className = 'badge ACTIVE';
+        document.getElementById('sessionBadge').textContent = 'SESSION ACTIVE';
+        document.getElementById('startBtn').disabled = true;
+        document.getElementById('endBtn').disabled = false;
+        document.getElementById('verifyResult').textContent = '';
+        logEvent({status: 'session_start', severity: 'info', message: `Maintenance session started by ${engineerName()} on ${state.machine}`});
+        renderPlan(); renderControls(); updateRisk();
+        emit('session_start', {job: state.job, machine: state.machine, engineer: engineerName(), ts: new Date().toISOString()});
+      }
+
+      async function endSession() {
+        state.active = false;
+        document.getElementById('sessionBadge').className = 'badge IDLE';
+        document.getElementById('sessionBadge').textContent = 'SESSION CLOSED';
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('endBtn').disabled = true;
+        await logEvent({status: 'session_end', severity: 'info', message: `Maintenance session closed — final risk score ${state.riskScore}`});
+        await verifyChain();
+        emit('session_end', {job: state.job, machine: state.machine, riskScore: state.riskScore, ts: new Date().toISOString()});
+      }
+
+      /* ---------- scripted demo (mirrors the pitch-deck walkthrough) ---------- */
+      async function runDemo() {
+        document.getElementById('demoBtn').disabled = true;
+        startSession();
+        await sleep(500);
+        handleChange(CONTROLS[0], 3200);           // approved motor speed
+        await sleep(700);
+        handleChange(CONTROLS[1], 'v18');          // approved plc version
+        await sleep(700);
+        handleChange(CONTROLS[3], '10.0.0.50');    // unauthorized IP change
+        await sleep(900);
+        handleChange(CONTROLS[4], 'OFF');          // critical: safety interlock removed
+        await sleep(900);
+        handleChange(CONTROLS[4], 'ON');           // restored
+        await sleep(700);
+        await endSession();
+        document.getElementById('demoBtn').disabled = false;
+      }
+      function sleep(ms) {return new Promise(r => setTimeout(r, ms));}
+
+      /* ---------- wire up ---------- */
+      document.getElementById('startBtn').addEventListener('click', startSession);
+      document.getElementById('endBtn').addEventListener('click', endSession);
+      document.getElementById('verifyBtn').addEventListener('click', verifyChain);
+      document.getElementById('tamperBtn').addEventListener('click', simulateTamper);
+      document.getElementById('demoBtn').addEventListener('click', runDemo);
+      document.getElementById('mMachine').textContent = state.machine;
+      document.getElementById('mJob').textContent = state.job;
+
+      renderPlan();
+      renderControls();
+      updateRisk();
+    })();
+  </script>
+</body>
+
+</html>

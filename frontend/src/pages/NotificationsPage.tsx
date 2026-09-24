@@ -4,30 +4,22 @@ import {
   Check, Trash2, Filter, ExternalLink, ShieldAlert
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { NOTIFICATIONS as INITIAL_NOTIFICATIONS } from '../lib/mockData';
+import { useSimulation } from '../lib/simulationStore';
 import { Card, SectionHeader } from '../components/ui';
 import type { Notification } from '../lib/types';
 
 export function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
+  const {
+    notifications,
+    markNotificationAsRead: markAsRead,
+    markAllNotificationsAsRead: markAllAsRead,
+    clearAllNotifications: clearAll,
+    pushNotification
+  } = useSimulation();
   const [filter, setFilter] = useState<'ALL' | 'CRITICAL' | 'WARNING' | 'INFO' | 'SUCCESS'>('ALL');
 
   const filtered = notifications.filter(n => filter === 'ALL' || n.type === filter);
   const unreadCount = notifications.filter(n => !n.read).length;
-
-  const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(n => (n.id === id ? { ...n, read: true } : n))
-    );
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  };
-
-  const clearAll = () => {
-    setNotifications([]);
-  };
 
   const triggerSimulatedAlert = () => {
     const newAlert: Notification = {
@@ -39,7 +31,7 @@ export function NotificationsPage() {
       timestamp: new Date().toISOString(),
       read: false,
     };
-    setNotifications(prev => [newAlert, ...prev]);
+    pushNotification(newAlert);
   };
 
   const getIcon = (type: Notification['type']) => {

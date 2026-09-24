@@ -5,6 +5,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { Card } from '../components/ui';
+import { Background3D } from '../components/Background3D';
 import type { UserRole } from '../lib/types';
 
 interface LoginPageProps {
@@ -30,7 +31,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         role,
         email: email || `${role.toLowerCase()}@maintx.internal`,
       });
-      navigate('/');
+      navigate('/dashboard');
     }, 600);
   };
 
@@ -44,9 +45,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
   return (
     <div className="min-h-screen bg-[#060913] text-slate-100 flex flex-col justify-center items-center p-4 relative overflow-hidden">
-      {/* Background industrial grid lines */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a15_1px,transparent_1px),linear-gradient(to_bottom,#0f172a15_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
-      <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-indigo-500 to-rose-500" />
+      {/* 3D Background */}
+      <Background3D />
+      <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-indigo-500 to-rose-500 z-10" />
 
       {/* Main card */}
       <div className="w-full max-w-md relative z-10">

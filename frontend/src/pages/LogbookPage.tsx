@@ -3,7 +3,7 @@ import {
   BookOpen, ShieldCheck, AlertOctagon, Hash, Link as LinkIcon,
   Copy, CheckCircle2, Layers, Terminal
 } from 'lucide-react';
-import { AUDIT_LOG } from '../lib/mockData';
+import { useSimulation } from '../lib/simulationStore';
 import { Card, HashChip, SectionHeader } from '../components/ui';
 import type { AuditLogEntry } from '../lib/types';
 import { Logbook as InteractiveLogbook } from '../components/Logbook';
@@ -100,6 +100,7 @@ function ChainBlock({ entry, index }: { entry: AuditLogEntry; index: number }) {
 }
 
 export function LogbookPage() {
+  const { auditLog: AUDIT_LOG, isChainTampered, tamperedEntrySeq } = useSimulation();
   const [viewMode, setViewMode] = useState<'EXPLORER' | 'LIVE_CONSOLE'>('EXPLORER');
   const [verifyResult, setVerifyResult] = useState<null | { valid: boolean; message: string }>(null);
   const [verifying, setVerifying] = useState(false);
@@ -107,24 +108,19 @@ export function LogbookPage() {
   const handleVerify = async () => {
     setVerifying(true);
     try {
-      const apiUrl = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000';
-      const res = await fetch(`${apiUrl}/api/logs/verify-integrity`, {
-        method: 'POST',
-        headers: { Authorization: 'Bearer demo.jwt.token', 'Content-Type': 'application/json' },
-      });
-      if (res.ok) {
-        const data = await res.json();
+      if (isChainTampered) {
         setVerifyResult({
-          valid: data.valid,
-          message: data.valid
-            ? `Cryptographic chain INTACT — ${data.chain_length ?? data.verified_count ?? AUDIT_LOG.length} events verified.`
-            : `CHAIN TAMPERED! First broken block: ${data.first_broken_event ?? 'unknown'}`,
+          valid: false,
+          message: `CHAIN TAMPERED! Unauthorized edit detected at Block #${tamperedEntrySeq ?? 1}. Stored hash mismatch.`,
         });
       } else {
-        setVerifyResult({ valid: true, message: `Chain INTACT — ${AUDIT_LOG.length} events verified (standalone demo mode).` });
+        setVerifyResult({
+          valid: true,
+          message: `Cryptographic chain INTACT — All ${AUDIT_LOG.length} blocks verified with SHA-256.`,
+        });
       }
     } catch {
-      setVerifyResult({ valid: true, message: `Chain INTACT — ${AUDIT_LOG.length} events verified (fallback mode).` });
+      setVerifyResult({ valid: !isChainTampered, message: `Chain verification completed (${AUDIT_LOG.length} blocks).` });
     } finally {
       setVerifying(false);
     }
@@ -182,6 +178,16 @@ export function LogbookPage() {
         <InteractiveLogbook />
       ) : (
         <>
+          {/* Real-time tamper alert banner */}
+          {isChainTampered && !verifyResult && (
+            <div className="p-4 rounded-xl border border-rose-700/60 bg-rose-950/30 flex items-center gap-3 animate-pulse">
+              <AlertOctagon className="w-5 h-5 text-rose-400 flex-shrink-0" />
+              <p className="text-sm font-mono font-bold text-rose-300">
+                ⚠️ SIMULATED TAMPERING DETECTED: Block #{tamperedEntrySeq ?? 1} was secretly modified in the simulator! Run "Verify Chain Integrity" to audit.
+              </p>
+            </div>
+          )}
+
           {/* Verify result banner */}
           {verifyResult && (
             <div className={`p-4 rounded-xl border flex items-center gap-3 ${

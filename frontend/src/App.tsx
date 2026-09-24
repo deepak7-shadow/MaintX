@@ -56,12 +56,16 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Root Redirect to SOC Dashboard */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/experience" element={<Navigate to="/dashboard" replace />} />
+
         {/* Public Login Route */}
         <Route
           path="/login"
           element={
             user ? (
-              <Navigate to="/" replace />
+              <Navigate to="/dashboard" replace />
             ) : (
               <LoginPage onLogin={handleLogin} />
             )
@@ -77,7 +81,7 @@ export function App() {
             ) : (
               <AppLayout currentUser={user} onLogout={handleLogout}>
                 <Routes>
-                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/machines" element={<MachinesPage />} />
                   <Route path="/machines/:code" element={<MachineDetailPage />} />
                   <Route path="/maintenance" element={<MaintenancePage />} />
@@ -88,7 +92,7 @@ export function App() {
                   <Route path="/analytics" element={<AnalyticsPage />} />
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/notifications" element={<NotificationsPage />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Routes>
               </AppLayout>
             )

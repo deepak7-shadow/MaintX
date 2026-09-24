@@ -4,20 +4,21 @@ import {
   Search, BookOpen, BarChart3, FileText, Bell,
   LogOut, Menu, X
 } from 'lucide-react';
-import { useState } from 'react';
-import { NOTIFICATIONS } from '../lib/mockData';
+import { useState, useRef } from 'react';
+import { useSimulation } from '../lib/simulationStore';
 import type { UserRole } from '../lib/types';
+import { Background3D } from './Background3D';
 
 const NAV = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/machines', label: 'Machines', icon: Server },
-  { to: '/maintenance', label: 'Maintenance', icon: Wrench },
-  { to: '/plc-integrity', label: 'PLC Integrity', icon: Cpu },
-  { to: '/changes', label: 'Change Investigation', icon: Search },
-  { to: '/logbook', label: 'Logbook', icon: BookOpen },
-  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { to: '/reports', label: 'Reports', icon: FileText },
-  { to: '/notifications', label: 'Notifications', icon: Bell },
+  { to: '/dashboard',  label: 'Dashboard',           icon: LayoutDashboard },
+  { to: '/machines',   label: 'Machines',             icon: Server },
+  { to: '/maintenance',label: 'Maintenance',          icon: Wrench },
+  { to: '/plc-integrity', label: 'PLC Integrity',     icon: Cpu },
+  { to: '/changes',    label: 'Change Investigation', icon: Search },
+  { to: '/logbook',    label: 'Logbook',              icon: BookOpen },
+  { to: '/analytics',  label: 'Analytics',            icon: BarChart3 },
+  { to: '/reports',    label: 'Reports',              icon: FileText },
+  { to: '/notifications', label: 'Notifications',     icon: Bell },
 ];
 
 interface SidebarProps {
@@ -27,7 +28,8 @@ interface SidebarProps {
 
 export function Sidebar({ currentUser, onLogout }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const unread = NOTIFICATIONS.filter(n => !n.read).length;
+  const { notifications } = useSimulation();
+  const unread = notifications.filter(n => !n.read).length;
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -44,7 +46,7 @@ export function Sidebar({ currentUser, onLogout }: SidebarProps) {
 
   return (
     <aside
-      className={`flex flex-col bg-[#090d18] border-r border-slate-800/80 transition-all duration-300 ${
+      className={`flex flex-col bg-[#080d1a]/90 backdrop-blur-xl border-r border-slate-800/80 transition-all duration-300 ${
         collapsed ? 'w-16' : 'w-60'
       } flex-shrink-0 min-h-screen z-30`}
     >
@@ -157,7 +159,8 @@ export function TopBar({
   title: string;
   currentUser?: { name: string; role: UserRole; email: string };
 }) {
-  const unread = NOTIFICATIONS.filter(n => !n.read).length;
+  const { notifications, activeSimSession, isChainTampered } = useSimulation();
+  const unread = notifications.filter(n => !n.read).length;
 
   return (
     <header className="bg-[#090d18]/90 backdrop-blur-md border-b border-slate-800/70 px-6 py-3.5 flex items-center justify-between sticky top-0 z-20">
@@ -171,11 +174,26 @@ export function TopBar({
       </div>
 
       <div className="flex items-center gap-3">
+        {/* 3D Engine Status Indicator */}
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyan-950/40 border border-cyan-800/50 text-[10px] font-mono text-cyan-300">
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+          <span className="font-semibold tracking-wider">3D CORE ACTIVE</span>
+        </div>
+
         {/* Live status */}
+        {activeSimSession.active && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-950/70 border border-rose-500/50 text-[10px] font-mono animate-pulse">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            <span className="text-rose-300 font-bold">SIM ACTIVE: {activeSimSession.machine}</span>
+          </div>
+        )}
+
         <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-md bg-slate-900/90 border border-slate-800 text-[10px] font-mono">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className={`w-2 h-2 rounded-full ${isChainTampered ? 'bg-rose-500' : 'bg-emerald-400'} animate-pulse`} />
           <span className="text-slate-400">LEDGER:</span>
-          <span className="text-emerald-400 font-semibold tracking-wider">SHA-256 VALID</span>
+          <span className={`${isChainTampered ? 'text-rose-400' : 'text-emerald-400'} font-semibold tracking-wider`}>
+            {isChainTampered ? 'TAMPER DETECTED' : 'SHA-256 VALID'}
+          </span>
         </div>
 
         <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900/90 border border-slate-800 text-[10px] font-mono">
@@ -208,9 +226,10 @@ interface LayoutProps {
 
 export function AppLayout({ children, currentUser, onLogout }: LayoutProps) {
   const location = useLocation();
+  const mainRef = useRef<HTMLElement | null>(null);
 
   const getPageTitle = (path: string) => {
-    if (path === '/') return 'Security Operations Center';
+    if (path === '/' || path === '/dashboard' || path.startsWith('/dashboard')) return 'Security Operations Center';
     if (path.startsWith('/machines')) return 'Industrial Machine Fleet';
     if (path.startsWith('/maintenance')) return 'Maintenance Sessions & Verification Gate';
     if (path.startsWith('/plc-integrity')) return 'PLC Logic Integrity Verification';
@@ -223,11 +242,15 @@ export function AppLayout({ children, currentUser, onLogout }: LayoutProps) {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#060913] text-slate-100 font-sans">
+    <div className="relative flex min-h-screen bg-[#060913] text-slate-100 font-sans overflow-hidden">
+      {/* 3D Scroll-Driven Interactive Background Canvas */}
+      <Background3D scrollTargetRef={mainRef} />
+
+      {/* Main SOC Interface */}
       <Sidebar currentUser={currentUser} onLogout={onLogout} />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="relative z-10 flex-1 flex flex-col min-w-0">
         <TopBar title={getPageTitle(location.pathname)} currentUser={currentUser} />
-        <main className="flex-1 p-6 max-w-7xl w-full mx-auto overflow-y-auto">
+        <main ref={mainRef} className="flex-1 min-w-0 overflow-y-auto p-6 max-w-7xl w-full mx-auto">
           {children}
         </main>
       </div>

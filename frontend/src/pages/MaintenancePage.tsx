@@ -4,17 +4,18 @@ import {
   Wrench, Search, CheckCircle2,
   User, ShieldCheck, Calendar, ChevronRight, Activity
 } from 'lucide-react';
-import { SESSIONS, CHANGES } from '../lib/mockData';
+import { useSimulation } from '../lib/simulationStore';
 import { Badge, Card, SectionHeader, RiskBar } from '../components/ui';
 import type { SessionStatus } from '../lib/types';
 
 // ─── Maintenance List Page ────────────────────────────────────────────────────
 
 export function MaintenancePage() {
+  const { sessions } = useSimulation();
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
-  const filtered = SESSIONS.filter(s => {
+  const filtered = sessions.filter(s => {
     const q = query.toLowerCase();
     const matchQ = !q ||
       s.session_code.toLowerCase().includes(q) ||
@@ -29,16 +30,16 @@ export function MaintenancePage() {
       <SectionHeader
         icon={<Wrench className="w-5 h-5" />}
         title="Maintenance Sessions"
-        subtitle={`${SESSIONS.length} sessions — ${SESSIONS.filter(s => s.session_status === 'IN_PROGRESS').length} active`}
+        subtitle={`${sessions.length} sessions — ${sessions.filter(s => s.session_status === 'IN_PROGRESS').length} active`}
       />
 
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'In Progress', value: SESSIONS.filter(s => s.session_status === 'IN_PROGRESS').length, color: 'text-cyan-400' },
-          { label: 'Awaiting Approval', value: SESSIONS.filter(s => s.session_status === 'SUPERVISOR_APPROVED').length, color: 'text-indigo-400' },
-          { label: 'Completed', value: SESSIONS.filter(s => s.session_status === 'COMPLETED').length, color: 'text-emerald-400' },
-          { label: 'Pending', value: SESSIONS.filter(s => s.session_status === 'PENDING').length, color: 'text-slate-400' },
+          { label: 'In Progress', value: sessions.filter(s => s.session_status === 'IN_PROGRESS').length, color: 'text-cyan-400' },
+          { label: 'Awaiting Approval', value: sessions.filter(s => s.session_status === 'SUPERVISOR_APPROVED').length, color: 'text-indigo-400' },
+          { label: 'Completed', value: sessions.filter(s => s.session_status === 'COMPLETED').length, color: 'text-emerald-400' },
+          { label: 'Pending', value: sessions.filter(s => s.session_status === 'PENDING').length, color: 'text-slate-400' },
         ].map((s, i) => (
           <Card key={i} className="p-4">
             <p className="text-[10px] font-mono text-slate-500 uppercase">{s.label}</p>
@@ -143,7 +144,8 @@ export function MaintenancePage() {
 
 export function MaintenanceDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const session = SESSIONS.find(s => s.id === id);
+  const { sessions, changes } = useSimulation();
+  const session = sessions.find(s => s.id === id || s.session_code === id);
 
   if (!session) {
     return (
@@ -153,7 +155,7 @@ export function MaintenanceDetailPage() {
     );
   }
 
-  const sessionChanges = CHANGES.filter(c => c.session_id === session.id);
+  const sessionChanges = changes.filter(c => c.session_id === session.session_code || c.session_id === session.id);
 
   const steps: { label: string; key: SessionStatus; icon: typeof CheckCircle2 }[] = [
     { label: 'Created', key: 'PENDING', icon: Calendar },
