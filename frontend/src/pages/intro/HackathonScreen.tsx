@@ -160,21 +160,22 @@ export function HackathonScreen({ onNext, exiting }: Props) {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* CTA */}
-      <div
-        className="absolute bottom-10 left-0 right-0 flex flex-col items-center gap-2"
-        style={{ opacity: phase >= 4 ? 1 : 0, transition: 'opacity 0.8s ease' }}
-      >
-        <div className="flex items-center gap-2">
-          <div className="h-px w-8 bg-slate-700" />
-          <span className="text-[11px] font-mono uppercase tracking-[0.3em] text-slate-500">Click to Continue</span>
-          <div className="h-px w-8 bg-slate-700" />
+        {/* CTA */}
+        <div
+          className="flex flex-col items-center gap-2 mt-4"
+          style={{ opacity: phase >= 4 ? 1 : 0, transition: 'opacity 0.8s ease' }}
+        >
+          <div className="flex items-center gap-2">
+            <div className="h-px w-8 bg-slate-700" />
+            <span className="text-[11px] font-mono uppercase tracking-[0.3em] text-slate-400">Click to Continue</span>
+            <div className="h-px w-8 bg-slate-700" />
+          </div>
+          <div className="flex items-center gap-1 text-[10px] font-mono text-slate-500 uppercase tracking-widest">
+            <ChevronRight className="w-3 h-3 text-cyan-400" /> Press Enter
+          </div>
         </div>
-        <div className="flex items-center gap-1 text-[10px] font-mono text-slate-700 uppercase tracking-widest">
-          <ChevronRight className="w-3 h-3" /> Press Enter
-        </div>
+
       </div>
 
       <style>{`

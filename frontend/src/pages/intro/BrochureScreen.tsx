@@ -255,23 +255,23 @@ export function BrochureScreen({ onNext, exiting }: Props) {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Modern Glowing CTA Button */}
-      <div
-        className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-2"
-        style={{ opacity: visible ? 1 : 0, transition: 'opacity 1s ease 1s' }}
-      >
-        <div className="group px-6 py-2 rounded-full border border-cyan-500/50 bg-cyan-950/50 hover:bg-cyan-900/60 text-cyan-300 hover:text-white transition-all duration-300 shadow-[0_0_20px_rgba(0,240,255,0.25)] flex items-center gap-3">
-          <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-          <span className="text-[11px] font-mono uppercase tracking-[0.25em] font-bold">
-            Click to Enter Experience
+        {/* Modern Glowing CTA Button */}
+        <div
+          className="flex flex-col items-center gap-2 mt-5 pb-2"
+          style={{ opacity: visible ? 1 : 0, transition: 'opacity 1s ease 1s' }}
+        >
+          <div className="group px-6 py-2 rounded-full border border-cyan-500/50 bg-cyan-950/50 hover:bg-cyan-900/60 text-cyan-300 hover:text-white transition-all duration-300 shadow-[0_0_20px_rgba(0,240,255,0.25)] flex items-center gap-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+            <span className="text-[11px] font-mono uppercase tracking-[0.25em] font-bold">
+              Click to Enter Experience
+            </span>
+            <ChevronRight className="w-3.5 h-3.5 text-cyan-400 group-hover:translate-x-0.5 transition-transform" />
+          </div>
+          <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">
+            or press [ Enter / Space ]
           </span>
-          <ChevronRight className="w-3.5 h-3.5 text-cyan-400 group-hover:translate-x-0.5 transition-transform" />
         </div>
-        <span className="text-[9px] font-mono text-slate-600 uppercase tracking-widest">
-          or press [ Enter / Space ]
-        </span>
       </div>
     </div>
   );

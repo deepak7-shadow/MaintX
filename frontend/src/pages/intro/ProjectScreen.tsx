@@ -105,7 +105,7 @@ export function ProjectScreen({ onNext, exiting }: Props) {
 
   return (
     <div
-      className="relative w-full h-full flex flex-col items-center justify-center cursor-pointer overflow-hidden"
+      className="relative w-full h-full min-h-screen flex flex-col items-center justify-center cursor-pointer overflow-y-auto py-10 px-4"
       onClick={onNext}
       style={{
         background: 'radial-gradient(ellipse at 50% 45%, rgba(8,13,31,0.80) 0%, rgba(4,6,14,0.90) 80%)',
@@ -127,7 +127,7 @@ export function ProjectScreen({ onNext, exiting }: Props) {
         background: 'radial-gradient(ellipse at 50% 50%, rgba(0,240,255,0.04) 0%, transparent 60%)',
       }} />
 
-      <div className="relative z-10 flex flex-col items-center text-center gap-5 px-8 max-w-2xl w-full">
+      <div className="relative z-10 flex flex-col items-center text-center gap-3.5 px-4 max-w-2xl w-full my-auto">
 
         {/* VRAZAN PRESENTS */}
         <div style={fi(phase >= 1)}>
@@ -141,7 +141,7 @@ export function ProjectScreen({ onNext, exiting }: Props) {
         <div style={fi(phase >= 2, 30)}>
           <div className="flex flex-col items-center gap-1">
             <h1
-              className="text-7xl md:text-8xl font-black tracking-tight"
+              className="text-6xl md:text-7xl lg:text-8xl font-black tracking-tight"
               style={{
                 background: 'linear-gradient(135deg, #ffffff 0%, #67e8f9 35%, #818cf8 70%, #ffffff 100%)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
@@ -161,15 +161,15 @@ export function ProjectScreen({ onNext, exiting }: Props) {
 
         {/* Subtitle */}
         <div style={fi(phase >= 3)}>
-          <p className="text-sm md:text-base font-mono text-slate-400 leading-relaxed max-w-md">
-            PLC Logic Integrity &<br />
+          <p className="text-xs md:text-sm font-mono text-slate-400 leading-relaxed max-w-md">
+            PLC Logic Integrity &amp;<br />
             <span className="text-slate-300">Maintenance Accountability Platform</span>
           </p>
         </div>
 
         {/* Tagline */}
-        <div style={fi(phase >= 4)} className="min-h-[72px]">
-          <p className="text-sm font-mono text-cyan-300/80 leading-relaxed whitespace-pre-line text-left border-l-2 border-cyan-800/60 pl-4 italic">
+        <div style={fi(phase >= 4)} className="min-h-[54px]">
+          <p className="text-xs md:text-sm font-mono text-cyan-300/80 leading-relaxed whitespace-pre-line text-left border-l-2 border-cyan-800/60 pl-4 italic">
             {typedTagline}
             {phase >= 4 && typedTagline.length < tagline.length && (
               <span className="animate-pulse">_</span>
@@ -178,11 +178,11 @@ export function ProjectScreen({ onNext, exiting }: Props) {
         </div>
 
         {/* Status indicators */}
-        <div className="grid grid-cols-2 gap-2 w-full max-w-md mt-2">
+        <div className="grid grid-cols-2 gap-2 w-full max-w-md mt-1">
           {STATUS_ITEMS.map(({ icon: Icon, label, color }, i) => (
             <div
               key={label}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-800/60 bg-slate-900/30"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-800/60 bg-slate-900/30"
               style={{
                 opacity: statusVisible[i] ? 1 : 0,
                 transform: statusVisible[i] ? 'translateX(0)' : 'translateX(-12px)',
@@ -196,21 +196,22 @@ export function ProjectScreen({ onNext, exiting }: Props) {
             </div>
           ))}
         </div>
-      </div>
 
-      {/* ENTER MAINTX CTA */}
-      <div
-        className="absolute bottom-10 left-0 right-0 flex flex-col items-center gap-3"
-        style={{ opacity: phase >= 5 ? 1 : 0, transition: 'opacity 0.8s ease' }}
-      >
+        {/* ENTER MAINTX CTA — in flow, cleanly below status indicators */}
         <div
-          className="px-8 py-2.5 rounded-full border border-cyan-600/50 bg-cyan-950/30 text-cyan-300 text-xs font-mono font-bold uppercase tracking-[0.25em] cursor-pointer hover:bg-cyan-900/40 transition"
+          className="flex flex-col items-center gap-2 mt-4"
+          style={{ opacity: phase >= 5 ? 1 : 0, transition: 'opacity 0.8s ease' }}
         >
-          ⟶ Enter MaintX
+          <div
+            className="px-8 py-2.5 rounded-full border border-cyan-500/50 bg-cyan-950/60 text-cyan-300 text-xs font-mono font-bold uppercase tracking-[0.25em] cursor-pointer hover:bg-cyan-900/60 hover:border-cyan-400 transition shadow-[0_0_20px_rgba(0,240,255,0.2)]"
+          >
+            ⟶ Enter MaintX
+          </div>
+          <div className="flex items-center gap-1 text-[10px] font-mono text-slate-500 uppercase tracking-widest">
+            <ChevronRight className="w-3 h-3 text-cyan-400" /> Click or Press Enter
+          </div>
         </div>
-        <div className="flex items-center gap-1 text-[10px] font-mono text-slate-700 uppercase tracking-widest">
-          <ChevronRight className="w-3 h-3" /> Click or Press Enter
-        </div>
+
       </div>
     </div>
   );
