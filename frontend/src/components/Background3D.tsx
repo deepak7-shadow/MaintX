@@ -13,14 +13,20 @@ export function Background3D({ scrollTargetRef }: Background3DProps) {
     if (!canvas) return;
 
     // ── 1. Renderer Setup ────────────────────────────────────────────────────
-    const renderer = new THREE.WebGLRenderer({
-      canvas,
-      alpha: true,
-      antialias: true,
-      powerPreference: 'high-performance',
-    });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        canvas,
+        alpha: true,
+        antialias: true,
+        powerPreference: 'high-performance',
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    } catch (e) {
+      console.warn('[Background3D] WebGL initialization skipped:', e);
+      return;
+    }
 
     // ── 2. Scene & Camera Setup ──────────────────────────────────────────────
     const scene = new THREE.Scene();

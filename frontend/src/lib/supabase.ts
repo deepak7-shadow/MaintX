@@ -1,8 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Machine } from './types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://grdmoxhfwsqkhcsrqvau.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+const DEFAULT_SUPABASE_URL = 'https://grdmoxhfwsqkhcsrqvau.supabase.co';
+const DEFAULT_SUPABASE_KEY = 'sb_publishable_O3dhbHua-Y9mDb0sdSbomA_6BBUP75O';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || DEFAULT_SUPABASE_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
