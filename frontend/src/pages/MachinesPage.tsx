@@ -1,9 +1,9 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   Server, Search, Filter, Cpu, Activity,
   Thermometer, Gauge, Wifi, ChevronRight, Shield, Clock,
-  Plus, X, CheckCircle2, AlertTriangle
+  Plus, X, CheckCircle2, AlertTriangle, Database
 } from 'lucide-react';
 import { useSimulation } from '../lib/simulationStore';
 import { Badge, Card, StatusDot, SectionHeader, RiskBar } from '../components/ui';
@@ -100,11 +100,12 @@ const selectCls = 'w-full px-3 py-2 bg-slate-900/80 border border-slate-700/80 r
 
 function AddMachineModal({ open, onClose, onAdd, existingCodes }: {
   open: boolean; onClose: () => void;
-  onAdd: (m: Machine) => void; existingCodes: Set<string>;
+  onAdd: (m: Machine) => Promise<{ success: boolean; dbSynced: boolean; error?: string }> | void;
+  existingCodes: Set<string>;
 }) {
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
-  const [submitted, setSubmitted] = useState(false);
+  const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'synced' | 'local'>('idle');
 
   if (!open) return null;
 
@@ -134,8 +135,10 @@ function AddMachineModal({ open, onClose, onAdd, existingCodes }: {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = () => {
-    if (!validate()) return;
+  const handleSubmit = async () => {
+    if (!validate() || syncState === 'syncing') return;
+    setSyncState('syncing');
+
     const now = new Date().toISOString();
     const machine: Machine = {
       id: `m-custom-${Date.now()}`,
@@ -154,20 +157,30 @@ function AddMachineModal({ open, onClose, onAdd, existingCodes }: {
       last_maintenance: now,
       created_at: now,
     };
-    onAdd(machine);
-    setSubmitted(true);
+
+    try {
+      const res = await onAdd(machine);
+      if (res && res.dbSynced) {
+        setSyncState('synced');
+      } else {
+        setSyncState('local');
+      }
+    } catch {
+      setSyncState('local');
+    }
+
     setTimeout(() => {
-      setSubmitted(false);
+      setSyncState('idle');
       setForm(EMPTY_FORM);
       setErrors({});
       onClose();
-    }, 1200);
+    }, 1400);
   };
 
   const handleClose = () => {
     setForm(EMPTY_FORM);
     setErrors({});
-    setSubmitted(false);
+    setSyncState('idle');
     onClose();
   };
 
@@ -183,8 +196,13 @@ function AddMachineModal({ open, onClose, onAdd, existingCodes }: {
               <Plus className="w-4 h-4 text-cyan-400" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">Register New Machine</h2>
-              <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Machine Registry · New Asset</p>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-white">Register New Machine</h2>
+                <span className="flex items-center gap-1 text-[9px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 px-2 py-0.5 rounded">
+                  <Database className="w-2.5 h-2.5 text-emerald-400" /> Cloud DB
+                </span>
+              </div>
+              <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Machine Registry · Supabase Synced</p>
             </div>
           </div>
           <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition">
@@ -282,14 +300,41 @@ function AddMachineModal({ open, onClose, onAdd, existingCodes }: {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={submitted}
+            disabled={syncState !== 'idle'}
             className={`flex-1 py-2.5 rounded-lg text-sm font-mono font-bold flex items-center justify-center gap-2 transition ${
-              submitted
+              syncState === 'syncing'
+                ? 'bg-cyan-900/60 border border-cyan-600/40 text-cyan-200 cursor-wait'
+                : syncState === 'synced'
                 ? 'bg-emerald-700/60 border border-emerald-600/40 text-emerald-300 cursor-not-allowed'
+                : syncState === 'local'
+                ? 'bg-amber-700/60 border border-amber-600/40 text-amber-200 cursor-not-allowed'
                 : 'bg-cyan-700/70 hover:bg-cyan-600/80 border border-cyan-500/50 text-white shadow-[0_0_20px_rgba(0,240,255,0.15)]'
             }`}
           >
-            {submitted ? <><CheckCircle2 className="w-4 h-4" />Registered!</> : <><Plus className="w-4 h-4" />Register Machine</>}
+            {syncState === 'syncing' && (
+              <>
+                <div className="w-3.5 h-3.5 border-2 border-cyan-300 border-t-transparent rounded-full animate-spin" />
+                <span>Syncing to Supabase...</span>
+              </>
+            )}
+            {syncState === 'synced' && (
+              <>
+                <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                <span>Saved to Supabase DB!</span>
+              </>
+            )}
+            {syncState === 'local' && (
+              <>
+                <CheckCircle2 className="w-4 h-4 text-amber-300" />
+                <span>Saved (Local Registry)</span>
+              </>
+            )}
+            {syncState === 'idle' && (
+              <>
+                <Plus className="w-4 h-4" />
+                <span>Register Machine</span>
+              </>
+            )}
           </button>
         </div>
       </div>

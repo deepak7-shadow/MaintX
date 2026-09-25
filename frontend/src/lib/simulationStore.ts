@@ -11,6 +11,7 @@ import type {
   ChangeCategory,
   ChangeClassification
 } from './types';
+import { insertSupabaseMachine, fetchSupabaseMachines } from './supabase';
 
 // ─── Initial Baseline Data (No random noise — matching simulator baseline) ───
 
@@ -792,7 +793,8 @@ export function pushNotification(notification: Notification) {
 
 // ─── Add Machine ──────────────────────────────────────────────────────────────
 
-export function addMachine(machine: Machine) {
+export async function addMachine(machine: Machine): Promise<{ success: boolean; dbSynced: boolean; error?: string }> {
+  // 1. Optimistic immediate update to local state
   const stats = computeStats(
     [...currentState.machines, machine],
     currentState.sessions,
@@ -819,6 +821,56 @@ export function addMachine(machine: Machine) {
     ],
   };
   notify();
+
+  // 2. Persist directly to Supabase database
+  try {
+    const res = await insertSupabaseMachine(machine);
+    if (res.success && res.id) {
+      // Update with persistent Supabase UUID
+      currentState = {
+        ...currentState,
+        machines: currentState.machines.map(m =>
+          m.machine_code === machine.machine_code ? { ...m, id: res.id! } : m
+        ),
+      };
+      notify();
+      return { success: true, dbSynced: true };
+    } else {
+      return { success: true, dbSynced: false, error: res.error };
+    }
+  } catch (err: any) {
+    console.warn('[Store] Supabase machine sync warning:', err);
+    return { success: true, dbSynced: false, error: err?.message };
+  }
+}
+
+// Background sync from Supabase database on startup
+if (typeof window !== 'undefined') {
+  fetchSupabaseMachines().then(dbMachines => {
+    if (dbMachines && dbMachines.length > 0) {
+      const existingCodes = new Set(currentState.machines.map(m => m.machine_code.toUpperCase()));
+      const newFromDb = dbMachines.filter(m => !existingCodes.has(m.machine_code.toUpperCase()));
+      if (newFromDb.length > 0) {
+        const mergedMachines = [...currentState.machines, ...newFromDb];
+        const stats = computeStats(
+          mergedMachines,
+          currentState.sessions,
+          currentState.changes,
+          currentState.plcResults,
+          currentState.auditLog,
+          currentState.isChainTampered
+        );
+        currentState = {
+          ...currentState,
+          machines: mergedMachines,
+          stats,
+        };
+        notify();
+      }
+    }
+  }).catch(err => {
+    console.warn('[Store] Background Supabase machines fetch warning:', err);
+  });
 }
 
 // ─── React Hook: useSimulation() ──────────────────────────────────────────────
@@ -829,7 +881,7 @@ export function useSimulation(): SimulationState & {
   markAllNotificationsAsRead: () => void;
   clearAllNotifications: () => void;
   pushNotification: (notification: Notification) => void;
-  addMachine: (machine: Machine) => void;
+  addMachine: (machine: Machine) => Promise<{ success: boolean; dbSynced: boolean; error?: string }>;
   riskTrendData: { date: string; critical: number; high: number; medium: number; low: number }[];
   categoryDistribution: { name: string; value: number; color: string }[];
   machineRiskData: { machine: string; score: number }[];
