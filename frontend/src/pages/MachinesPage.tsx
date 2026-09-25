@@ -1,8 +1,9 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   Server, Search, Filter, Cpu, Activity,
-  Thermometer, Gauge, Wifi, ChevronRight, Shield, Clock
+  Thermometer, Gauge, Wifi, ChevronRight, Shield, Clock,
+  Plus, X, CheckCircle2, AlertTriangle
 } from 'lucide-react';
 import { useSimulation } from '../lib/simulationStore';
 import { Badge, Card, StatusDot, SectionHeader, RiskBar } from '../components/ui';
@@ -33,7 +34,7 @@ function MachineCard({ m }: { m: Machine }) {
       <Card className="p-4 hover:border-slate-600 transition-all group cursor-pointer">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <p className="text-xs font-mono text-slate-400">{m.machine_type.replace('_', ' ')}</p>
+            <p className="text-xs font-mono text-slate-400">{m.machine_type.replace(/_/g, ' ')}</p>
             <h3 className="text-sm font-bold text-white group-hover:text-cyan-400 transition mt-0.5">
               {m.machine_code}
             </h3>
@@ -58,12 +59,251 @@ function MachineCard({ m }: { m: Machine }) {
   );
 }
 
+// ─── Add Machine Modal ────────────────────────────────────────────────────────
+
+const MACHINE_TYPES = [
+  '5_AXIS_CNC', 'VERTICAL_MILL', 'WELDING_ROBOT', 'CONVEYOR', 'HYDRAULIC_PRESS',
+  'LATHE', 'INJECTION_MOLDING', 'COMPRESSOR', 'PUMP', 'ROBOT_ARM', 'HEAT_EXCHANGER', 'OTHER'
+];
+const STATUSES: Machine['status'][] = ['OPERATIONAL', 'MAINTENANCE', 'OFFLINE', 'CRITICAL'];
+
+type FormData = {
+  machine_code: string; name: string; location: string; sector: string;
+  machine_type: string; status: Machine['status']; plc_version: string;
+  motor_speed_rpm: string; temperature_limit_c: string; pressure_limit_bar: string;
+  ip_address: string; firmware_version: string;
+};
+
+const EMPTY_FORM: FormData = {
+  machine_code: '', name: '', location: '', sector: '',
+  machine_type: '5_AXIS_CNC', status: 'OPERATIONAL', plc_version: 'v17',
+  motor_speed_rpm: '1500', temperature_limit_c: '80', pressure_limit_bar: '6.0',
+  ip_address: '', firmware_version: 'FW-4.9.0',
+};
+
+function Field({ label, required, error, children }: {
+  label: string; required?: boolean; error?: string; children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">
+        {label}{required && <span className="text-rose-400 ml-0.5">*</span>}
+      </label>
+      {children}
+      {error && <p className="text-[10px] text-rose-400 font-mono">{error}</p>}
+    </div>
+  );
+}
+
+const inputCls = 'w-full px-3 py-2 bg-slate-900/80 border border-slate-700/80 rounded-lg text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-600 transition font-mono';
+const selectCls = 'w-full px-3 py-2 bg-slate-900/80 border border-slate-700/80 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-cyan-600 transition font-mono';
+
+function AddMachineModal({ open, onClose, onAdd, existingCodes }: {
+  open: boolean; onClose: () => void;
+  onAdd: (m: Machine) => void; existingCodes: Set<string>;
+}) {
+  const [form, setForm] = useState<FormData>(EMPTY_FORM);
+  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [submitted, setSubmitted] = useState(false);
+
+  if (!open) return null;
+
+  const set = (k: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setForm(f => ({ ...f, [k]: e.target.value }));
+    setErrors(er => ({ ...er, [k]: undefined }));
+  };
+
+  const validate = (): boolean => {
+    const errs: Partial<Record<keyof FormData, string>> = {};
+    if (!form.machine_code.trim()) errs.machine_code = 'Required';
+    else if (existingCodes.has(form.machine_code.trim().toUpperCase()))
+      errs.machine_code = 'Machine code already exists';
+    if (!form.name.trim()) errs.name = 'Required';
+    if (!form.location.trim()) errs.location = 'Required';
+    if (!form.sector.trim()) errs.sector = 'Required';
+    if (!form.ip_address.trim()) errs.ip_address = 'Required';
+    else if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(form.ip_address.trim()))
+      errs.ip_address = 'Invalid IP (e.g. 192.168.10.50)';
+    const rpm = Number(form.motor_speed_rpm);
+    if (isNaN(rpm) || rpm <= 0) errs.motor_speed_rpm = 'Must be > 0';
+    const temp = Number(form.temperature_limit_c);
+    if (isNaN(temp) || temp <= 0) errs.temperature_limit_c = 'Must be > 0';
+    const press = Number(form.pressure_limit_bar);
+    if (isNaN(press) || press <= 0) errs.pressure_limit_bar = 'Must be > 0';
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (!validate()) return;
+    const now = new Date().toISOString();
+    const machine: Machine = {
+      id: `m-custom-${Date.now()}`,
+      machine_code: form.machine_code.trim().toUpperCase(),
+      name: form.name.trim(),
+      location: form.location.trim(),
+      sector: form.sector.trim(),
+      machine_type: form.machine_type,
+      status: form.status,
+      plc_version: form.plc_version.trim() || 'v17',
+      motor_speed_rpm: Number(form.motor_speed_rpm),
+      temperature_limit_c: Number(form.temperature_limit_c),
+      pressure_limit_bar: Number(form.pressure_limit_bar),
+      ip_address: form.ip_address.trim(),
+      firmware_version: form.firmware_version.trim() || 'FW-4.9.0',
+      last_maintenance: now,
+      created_at: now,
+    };
+    onAdd(machine);
+    setSubmitted(true);
+    setTimeout(() => {
+      setSubmitted(false);
+      setForm(EMPTY_FORM);
+      setErrors({});
+      onClose();
+    }, 1200);
+  };
+
+  const handleClose = () => {
+    setForm(EMPTY_FORM);
+    setErrors({});
+    setSubmitted(false);
+    onClose();
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
+      <div className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[520px] flex flex-col bg-[#0b1322] border-l border-slate-700/60 shadow-2xl overflow-hidden">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/60 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="p-1.5 rounded-lg bg-cyan-950/60 border border-cyan-800/40">
+              <Plus className="w-4 h-4 text-cyan-400" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-white">Register New Machine</h2>
+              <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Machine Registry · New Asset</p>
+            </div>
+          </div>
+          <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Scrollable form */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+
+          {/* Identity */}
+          <div>
+            <p className="text-[10px] font-mono text-cyan-500 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+              <span className="h-px flex-1 bg-cyan-900/40" />Identity<span className="h-px flex-1 bg-cyan-900/40" />
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Machine Code" required error={errors.machine_code}>
+                <input className={inputCls} placeholder="e.g. CNC-07" value={form.machine_code} onChange={set('machine_code')} />
+              </Field>
+              <Field label="Status" required>
+                <select className={selectCls} value={form.status} onChange={set('status')}>
+                  {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </Field>
+            </div>
+            <div className="mt-4">
+              <Field label="Machine Name" required error={errors.name}>
+                <input className={inputCls} placeholder="e.g. High-Speed Vertical Milling Centre" value={form.name} onChange={set('name')} />
+              </Field>
+            </div>
+          </div>
+
+          {/* Location */}
+          <div>
+            <p className="text-[10px] font-mono text-indigo-500 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+              <span className="h-px flex-1 bg-indigo-900/40" />Location<span className="h-px flex-1 bg-indigo-900/40" />
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Location" required error={errors.location}>
+                <input className={inputCls} placeholder="e.g. Shop Floor - Bay 5" value={form.location} onChange={set('location')} />
+              </Field>
+              <Field label="Sector" required error={errors.sector}>
+                <input className={inputCls} placeholder="e.g. Automotive Components" value={form.sector} onChange={set('sector')} />
+              </Field>
+            </div>
+          </div>
+
+          {/* Configuration */}
+          <div>
+            <p className="text-[10px] font-mono text-amber-500 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+              <span className="h-px flex-1 bg-amber-900/40" />Configuration<span className="h-px flex-1 bg-amber-900/40" />
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Machine Type" required>
+                <select className={selectCls} value={form.machine_type} onChange={set('machine_type')}>
+                  {MACHINE_TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+                </select>
+              </Field>
+              <Field label="PLC Version">
+                <input className={inputCls} placeholder="e.g. v17" value={form.plc_version} onChange={set('plc_version')} />
+              </Field>
+              <Field label="Motor Speed (RPM)" error={errors.motor_speed_rpm}>
+                <input type="number" className={inputCls} placeholder="1500" value={form.motor_speed_rpm} onChange={set('motor_speed_rpm')} />
+              </Field>
+              <Field label="Temp Limit (°C)" error={errors.temperature_limit_c}>
+                <input type="number" className={inputCls} placeholder="80" value={form.temperature_limit_c} onChange={set('temperature_limit_c')} />
+              </Field>
+              <Field label="Pressure Limit (bar)" error={errors.pressure_limit_bar}>
+                <input type="number" className={inputCls} placeholder="6.0" value={form.pressure_limit_bar} onChange={set('pressure_limit_bar')} />
+              </Field>
+              <Field label="Firmware Version">
+                <input className={inputCls} placeholder="FW-4.9.0" value={form.firmware_version} onChange={set('firmware_version')} />
+              </Field>
+            </div>
+          </div>
+
+          {/* Network */}
+          <div>
+            <p className="text-[10px] font-mono text-emerald-500 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+              <span className="h-px flex-1 bg-emerald-900/40" />Network<span className="h-px flex-1 bg-emerald-900/40" />
+            </p>
+            <Field label="IP Address" required error={errors.ip_address}>
+              <input className={inputCls} placeholder="192.168.10.50" value={form.ip_address} onChange={set('ip_address')} />
+            </Field>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/60 flex items-center gap-3 flex-shrink-0">
+          <button
+            onClick={handleClose}
+            className="flex-1 py-2.5 rounded-lg border border-slate-700 text-slate-300 text-sm font-mono hover:bg-slate-800 transition"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={submitted}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-mono font-bold flex items-center justify-center gap-2 transition ${
+              submitted
+                ? 'bg-emerald-700/60 border border-emerald-600/40 text-emerald-300 cursor-not-allowed'
+                : 'bg-cyan-700/70 hover:bg-cyan-600/80 border border-cyan-500/50 text-white shadow-[0_0_20px_rgba(0,240,255,0.15)]'
+            }`}
+          >
+            {submitted ? <><CheckCircle2 className="w-4 h-4" />Registered!</> : <><Plus className="w-4 h-4" />Register Machine</>}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ─── Machines List Page ───────────────────────────────────────────────────────
 
 export function MachinesPage() {
-  const { machines } = useSimulation();
+  const { machines, addMachine } = useSimulation();
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [modalOpen, setModalOpen] = useState(false);
 
   const filtered = machines.filter(m => {
     const q = query.toLowerCase();
@@ -72,13 +312,24 @@ export function MachinesPage() {
     return matchQ && matchS;
   });
 
+  const existingCodes = new Set(machines.map(m => m.machine_code.toUpperCase()));
+
   return (
     <div className="space-y-6">
-      <SectionHeader
-        icon={<Server className="w-5 h-5" />}
-        title="Machine Registry"
-        subtitle={`${machines.length} registered assets across ${new Set(machines.map(m => m.sector)).size} sectors`}
-      />
+      <div className="flex items-start justify-between gap-4">
+        <SectionHeader
+          icon={<Server className="w-5 h-5" />}
+          title="Machine Registry"
+          subtitle={`${machines.length} registered assets across ${new Set(machines.map(m => m.sector)).size} sectors`}
+        />
+        <button
+          onClick={() => setModalOpen(true)}
+          className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-700/60 hover:bg-cyan-600/70 border border-cyan-500/50 text-white text-sm font-mono font-bold transition shadow-[0_0_20px_rgba(0,240,255,0.12)] hover:shadow-[0_0_28px_rgba(0,240,255,0.2)]"
+        >
+          <Plus className="w-4 h-4" />
+          Add Machine
+        </button>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
@@ -91,7 +342,7 @@ export function MachinesPage() {
             className="w-full pl-9 pr-4 py-2 bg-slate-900/80 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-700 transition"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Filter className="w-3.5 h-3.5 text-slate-500" />
           {['ALL', 'OPERATIONAL', 'MAINTENANCE', 'CRITICAL', 'OFFLINE'].map(s => (
             <button
@@ -110,9 +361,24 @@ export function MachinesPage() {
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filtered.map(m => <MachineCard key={m.id} m={m} />)}
-      </div>
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+          <AlertTriangle className="w-8 h-8 text-slate-600" />
+          <p className="text-slate-400 text-sm">No machines match your filter.</p>
+          <p className="text-slate-600 text-xs font-mono">Try adjusting the search or status filter.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filtered.map(m => <MachineCard key={m.id} m={m} />)}
+        </div>
+      )}
+
+      <AddMachineModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onAdd={addMachine}
+        existingCodes={existingCodes}
+      />
     </div>
   );
 }
@@ -167,7 +433,7 @@ export function MachineDetailPage() {
           { label: 'Pressure', value: `${machine.pressure_limit_bar} bar`, icon: <Gauge className="w-4 h-4" />, color: 'text-blue-400' },
           { label: 'IP Address', value: machine.ip_address, icon: <Wifi className="w-4 h-4" />, color: 'text-emerald-400' },
           { label: 'Firmware', value: machine.firmware_version, icon: <Shield className="w-4 h-4" />, color: 'text-purple-400' },
-          { label: 'Machine Type', value: machine.machine_type.replace('_', ' '), icon: <Server className="w-4 h-4" />, color: 'text-slate-400' },
+          { label: 'Machine Type', value: machine.machine_type.replace(/_/g, ' '), icon: <Server className="w-4 h-4" />, color: 'text-slate-400' },
           { label: 'Last Maintenance', value: new Date(machine.last_maintenance).toLocaleDateString(), icon: <Clock className="w-4 h-4" />, color: 'text-slate-400' },
         ].map((p, i) => (
           <Card key={i} className="p-3">
@@ -258,6 +524,7 @@ export function MachineDetailPage() {
           <Link to="/changes" className="text-[10px] font-mono text-cyan-400 hover:text-cyan-300">VIEW ALL →</Link>
         </div>
         <div className="space-y-2">
+          {changes.length === 0 && <p className="text-xs text-slate-500 text-center py-4">No changes recorded.</p>}
           {changes.map(c => (
             <div key={c.id} className="flex items-center justify-between p-3 bg-slate-900/50 border border-slate-800 rounded-lg">
               <div>

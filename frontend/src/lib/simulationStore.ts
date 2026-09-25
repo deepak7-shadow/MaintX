@@ -790,6 +790,37 @@ export function pushNotification(notification: Notification) {
   notify();
 }
 
+// ─── Add Machine ──────────────────────────────────────────────────────────────
+
+export function addMachine(machine: Machine) {
+  const stats = computeStats(
+    [...currentState.machines, machine],
+    currentState.sessions,
+    currentState.changes,
+    currentState.plcResults,
+    currentState.auditLog,
+    currentState.isChainTampered
+  );
+  currentState = {
+    ...currentState,
+    machines: [...currentState.machines, machine],
+    stats,
+    notifications: [
+      {
+        id: `notif-machine-${Date.now()}`,
+        type: 'SUCCESS',
+        title: `Machine Registered: ${machine.machine_code}`,
+        message: `${machine.name} has been added to the Machine Registry.`,
+        machine_code: machine.machine_code,
+        timestamp: new Date().toISOString(),
+        read: false,
+      },
+      ...currentState.notifications,
+    ],
+  };
+  notify();
+}
+
 // ─── React Hook: useSimulation() ──────────────────────────────────────────────
 
 export function useSimulation(): SimulationState & {
@@ -798,6 +829,7 @@ export function useSimulation(): SimulationState & {
   markAllNotificationsAsRead: () => void;
   clearAllNotifications: () => void;
   pushNotification: (notification: Notification) => void;
+  addMachine: (machine: Machine) => void;
   riskTrendData: { date: string; critical: number; high: number; medium: number; low: number }[];
   categoryDistribution: { name: string; value: number; color: string }[];
   machineRiskData: { machine: string; score: number }[];
@@ -867,6 +899,7 @@ export function useSimulation(): SimulationState & {
     markAllNotificationsAsRead,
     clearAllNotifications,
     pushNotification,
+    addMachine,
     riskTrendData,
     categoryDistribution,
     machineRiskData,
