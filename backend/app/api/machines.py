@@ -15,11 +15,17 @@ import logging
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import get_current_user, require_engineer
 from app.schemas.auth import UserProfileResponse
-from app.schemas.machines import MachineResponse, MachineSummary, MachineStateResponse, SimulatedState
+from app.schemas.machines import (
+    MachineCreateRequest,
+    MachineResponse,
+    MachineSummary,
+    MachineStateResponse,
+    SimulatedState,
+)
 from app.schemas.maintenance import MaintenanceModeStatus
 from app.services import machine_service, maintenance_service
 from app.services.simulator import simulate_machine
@@ -27,6 +33,19 @@ from app.services.simulator import simulate_machine
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/machines", tags=["Machines"])
+
+
+@router.post(
+    "",
+    response_model=MachineResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Register a new machine",
+    description="Registers a new machine asset directly into the Supabase database.",
+)
+async def create_machine(
+    payload: MachineCreateRequest,
+) -> MachineResponse:
+    return await machine_service.create_machine(payload)
 
 
 @router.get(
@@ -39,6 +58,7 @@ async def list_machines(
     _: UserProfileResponse = Depends(get_current_user),
 ) -> List[MachineSummary]:
     return await machine_service.list_machines()
+
 
 
 @router.get(

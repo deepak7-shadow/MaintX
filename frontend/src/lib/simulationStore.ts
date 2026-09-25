@@ -844,34 +844,39 @@ export async function addMachine(machine: Machine): Promise<{ success: boolean; 
   }
 }
 
-// Background sync from Supabase database on startup
+// Background sync from Supabase database on startup — DB is source of truth
 if (typeof window !== 'undefined') {
   fetchSupabaseMachines().then(dbMachines => {
     if (dbMachines && dbMachines.length > 0) {
-      const existingCodes = new Set(currentState.machines.map(m => m.machine_code.toUpperCase()));
-      const newFromDb = dbMachines.filter(m => !existingCodes.has(m.machine_code.toUpperCase()));
-      if (newFromDb.length > 0) {
-        const mergedMachines = [...currentState.machines, ...newFromDb];
-        const stats = computeStats(
-          mergedMachines,
-          currentState.sessions,
-          currentState.changes,
-          currentState.plcResults,
-          currentState.auditLog,
-          currentState.isChainTampered
-        );
-        currentState = {
-          ...currentState,
-          machines: mergedMachines,
-          stats,
-        };
-        notify();
-      }
+      // DB is the authoritative source: replace local baseline entirely.
+      // Any locally-added machines (not yet persisted) are kept if they have
+      // a temporary id prefix or don't exist in DB by machine_code.
+      const dbCodes = new Set(dbMachines.map(m => m.machine_code.toUpperCase()));
+      const localOnlyMachines = currentState.machines.filter(
+        m => !dbCodes.has(m.machine_code.toUpperCase())
+      );
+      const mergedMachines = [...dbMachines, ...localOnlyMachines];
+      const stats = computeStats(
+        mergedMachines,
+        currentState.sessions,
+        currentState.changes,
+        currentState.plcResults,
+        currentState.auditLog,
+        currentState.isChainTampered
+      );
+      currentState = {
+        ...currentState,
+        machines: mergedMachines,
+        stats,
+      };
+      notify();
+      console.info(`[Store] Loaded ${dbMachines.length} machines from Supabase (DB is source of truth).`);
     }
   }).catch(err => {
     console.warn('[Store] Background Supabase machines fetch warning:', err);
   });
 }
+
 
 // ─── React Hook: useSimulation() ──────────────────────────────────────────────
 

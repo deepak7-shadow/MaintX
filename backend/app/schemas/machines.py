@@ -28,6 +28,24 @@ class MachineStateSnapshot(BaseModel):
     parameters: Dict[str, Any] = {}
 
 
+class MachineCreateRequest(BaseModel):
+    machine_code: str
+    name: str
+    machine_type: str = "5_AXIS_CNC"
+    criticality: str = "HIGH"
+    location: str
+    status: str = "OPERATIONAL"
+    plc_version: str = "v17"
+    plc_integrity_status: str = "VERIFIED"
+    firmware: str = "4.9.0"
+    ip_address: str
+    subnet: str = "255.255.255.0"
+    gateway: Optional[str] = None
+    firewall_configuration: Dict[str, Any] = Field(default_factory=lambda: {"mac_filtering": True, "inspection_mode": "STRICT"})
+    safety_configuration: Dict[str, Any] = Field(default_factory=lambda: {"estop_circuit": "DUAL_CHANNEL_CAT4"})
+    parameters: Dict[str, Any] = Field(default_factory=dict)
+
+
 class MachineResponse(BaseModel):
     id: UUID
     machine_code: str

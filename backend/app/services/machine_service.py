@@ -10,7 +10,12 @@ from uuid import UUID
 from fastapi import HTTPException, status
 
 from app.db.client import get_supabase_client
-from app.schemas.machines import MachineResponse, MachineSummary, MachineStateResponse
+from app.schemas.machines import (
+    MachineCreateRequest,
+    MachineResponse,
+    MachineSummary,
+    MachineStateResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -150,3 +155,34 @@ async def set_machine_maintenance_mode(machine_id: UUID, enable: bool) -> None:
     except Exception as exc:
         logger.error("Failed to set maintenance mode for %s: %s", machine_id, exc)
         raise HTTPException(status_code=503, detail="Failed to update machine status.")
+
+
+async def create_machine(data: MachineCreateRequest) -> MachineResponse:
+    """Insert a new machine into Supabase database."""
+    client = get_supabase_client()
+    row = data.model_dump()
+    row["machine_code"] = row["machine_code"].strip().upper()
+
+    if not row.get("gateway"):
+        parts = row["ip_address"].strip().split(".")
+        row["gateway"] = f"{parts[0]}.{parts[1]}.{parts[2]}.1" if len(parts) == 4 else "192.168.10.1"
+
+    # Status mapping to match DB constraint
+    if row["status"] == "MAINTENANCE":
+        row["status"] = "MAINTENANCE_MODE"
+    elif row["status"] == "CRITICAL":
+        row["status"] = "COMPROMISED"
+    elif row["status"] == "OFFLINE":
+        row["status"] = "IDLE"
+
+    try:
+        result = client.table("machines").insert(row).execute()
+    except Exception as exc:
+        logger.error("Failed to create machine: %s", exc)
+        raise HTTPException(status_code=400, detail=f"Failed to create machine: {exc}")
+
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Machine insertion returned no data.")
+
+    return _row_to_machine(result.data[0])
+

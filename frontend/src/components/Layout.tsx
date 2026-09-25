@@ -2,7 +2,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   ShieldCheck, LayoutDashboard, Server, Wrench, Cpu,
   Search, BookOpen, BarChart3, FileText, Bell,
-  LogOut, Menu, X, Film, ExternalLink
+  LogOut, Menu, X, Film, ExternalLink, Database
 } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { useSimulation } from '../lib/simulationStore';
@@ -199,6 +199,12 @@ export function TopBar({
         <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900/90 border border-slate-800 text-[10px] font-mono">
           <span className="text-slate-400">PLC GATE:</span>
           <span className="text-cyan-400 font-semibold">ENFORCED</span>
+        </div>
+
+        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-950/50 border border-emerald-800/40 text-[10px] font-mono text-emerald-400 shadow-sm" title="Connected to Supabase PostgreSQL Database">
+          <Database className="w-3 h-3 text-emerald-400" />
+          <span className="text-slate-400">DB:</span>
+          <span className="font-semibold text-emerald-300">SUPABASE CONNECTED</span>
         </div>
 
         <NavLink

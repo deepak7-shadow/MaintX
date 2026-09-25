@@ -106,6 +106,7 @@ function AddMachineModal({ open, onClose, onAdd, existingCodes }: {
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'synced' | 'local'>('idle');
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   if (!open) return null;
 
@@ -123,8 +124,11 @@ function AddMachineModal({ open, onClose, onAdd, existingCodes }: {
     if (!form.location.trim()) errs.location = 'Required';
     if (!form.sector.trim()) errs.sector = 'Required';
     if (!form.ip_address.trim()) errs.ip_address = 'Required';
-    else if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(form.ip_address.trim()))
-      errs.ip_address = 'Invalid IP (e.g. 192.168.10.50)';
+    else {
+      const octets = form.ip_address.trim().split('.');
+      const validIp = octets.length === 4 && octets.every(o => /^\d{1,3}$/.test(o) && Number(o) >= 0 && Number(o) <= 255);
+      if (!validIp) errs.ip_address = 'Invalid IP — each octet must be 0–255 (e.g. 192.168.10.50)';
+    }
     const rpm = Number(form.motor_speed_rpm);
     if (isNaN(rpm) || rpm <= 0) errs.motor_speed_rpm = 'Must be > 0';
     const temp = Number(form.temperature_limit_c);
@@ -158,29 +162,34 @@ function AddMachineModal({ open, onClose, onAdd, existingCodes }: {
       created_at: now,
     };
 
+    setSyncError(null);
     try {
       const res = await onAdd(machine);
       if (res && res.dbSynced) {
         setSyncState('synced');
+        setTimeout(() => {
+          setSyncState('idle');
+          setSyncError(null);
+          setForm(EMPTY_FORM);
+          setErrors({});
+          onClose();
+        }, 1400);
       } else {
-        setSyncState('local');
+        // DB sync failed — show error, stay open so user can fix
+        setSyncState('idle');
+        setSyncError(res?.error || 'Database sync failed. Check backend logs.');
       }
-    } catch {
-      setSyncState('local');
-    }
-
-    setTimeout(() => {
+    } catch (err: any) {
       setSyncState('idle');
-      setForm(EMPTY_FORM);
-      setErrors({});
-      onClose();
-    }, 1400);
+      setSyncError(err?.message || 'Unexpected error. Is the backend running?');
+    }
   };
 
   const handleClose = () => {
     setForm(EMPTY_FORM);
     setErrors({});
     setSyncState('idle');
+    setSyncError(null);
     onClose();
   };
 
@@ -290,6 +299,16 @@ function AddMachineModal({ open, onClose, onAdd, existingCodes }: {
           </div>
         </div>
 
+        {/* DB Sync Error Banner */}
+        {syncError && (
+          <div className="mx-6 mb-3 px-4 py-3 rounded-lg bg-rose-950/50 border border-rose-700/50 text-rose-300 text-xs font-mono flex items-start gap-2">
+            <span className="text-rose-400 mt-0.5">⚠</span>
+            <div>
+              <p className="font-bold text-rose-200 mb-0.5">Database Sync Failed</p>
+              <p>{syncError}</p>
+            </div>
+          </div>
+        )}
         {/* Footer */}
         <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/60 flex items-center gap-3 flex-shrink-0">
           <button

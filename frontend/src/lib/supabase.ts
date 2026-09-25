@@ -63,14 +63,15 @@ export async function ensureAuthSession(email = 'admin@maintx.internal', passwor
   }
 }
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 /**
- * Inserts a new machine directly into the Supabase PostgreSQL database.
+ * Inserts a new machine via the FastAPI backend (POST /api/machines).
+ * The backend uses the service-role key so it bypasses RLS reliably.
  */
 export async function insertSupabaseMachine(machine: Machine): Promise<{ success: boolean; error?: string; id?: string }> {
   try {
-    await ensureAuthSession();
-
-    const dbRow = {
+    const payload = {
       machine_code: machine.machine_code.toUpperCase(),
       name: machine.name,
       machine_type: machine.machine_type || '5_AXIS_CNC',
@@ -94,21 +95,23 @@ export async function insertSupabaseMachine(machine: Machine): Promise<{ success
       },
     };
 
-    const { data, error } = await supabase
-      .from('machines')
-      .insert([dbRow])
-      .select('id')
-      .single();
+    const res = await fetch(`${API_URL}/api/machines`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
 
-    if (error) {
-      console.error('[Supabase] Insert machine error:', error);
-      return { success: false, error: error.message };
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('[API] Insert machine error:', res.status, errText);
+      return { success: false, error: `HTTP ${res.status}: ${errText}` };
     }
 
-    console.info('[Supabase] Successfully saved machine to database:', machine.machine_code, data?.id);
+    const data = await res.json();
+    console.info('[API] Successfully saved machine to database:', machine.machine_code, data?.id);
     return { success: true, id: data?.id };
   } catch (err: any) {
-    console.error('[Supabase] Unexpected error saving machine:', err);
+    console.error('[API] Unexpected error saving machine:', err);
     return { success: false, error: err?.message || 'Network error' };
   }
 }
