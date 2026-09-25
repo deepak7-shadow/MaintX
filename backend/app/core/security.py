@@ -32,12 +32,24 @@ def decode_supabase_jwt(token: str) -> Dict[str, Any]:
         return {"sub": "0e2b777c-bdb6-43ec-a15b-1aca9a209280", "role": "authenticated"}
 
     if not settings.SUPABASE_JWT_SECRET:
-        # Fallback: if no JWT secret is configured, we cannot verify —
-        # fail closed (deny) rather than open.
-        logger.error("SUPABASE_JWT_SECRET is not configured — cannot verify JWT.")
+        try:
+            from app.db.client import get_supabase_client
+            client = get_supabase_client()
+            user_resp = client.auth.get_user(token)
+            if user_resp and user_resp.user:
+                return {"sub": str(user_resp.user.id), "role": "authenticated"}
+        except Exception as exc:
+            logger.warning("Supabase token verification failed: %s", exc)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired authentication token.",
+                headers={"WWW-Authenticate": "Bearer"},
+            ) from exc
+
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Authentication service is not configured. Contact an administrator.",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unable to verify authentication token.",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     try:
