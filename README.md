@@ -8,7 +8,7 @@
 [![Tests](https://img.shields.io/badge/Tests-118%2F118%20Passing-brightgreen.svg)](https://pytest.org)
 [![Security](https://img.shields.io/badge/Standard-IEC%2062443%20%2F%20ISO%2027001-blue.svg)](https://www.isa.org)
 
-**MaintX** is an industrial cybersecurity platform engineered for Operational Technology (OT), Industrial Control Systems (ICS), and SCADA environments. It enforces **Zero-Trust Maintenance Accountability**, **PLC Logic Integrity Verification**, and **Tamper-Evident Cryptographic Audit Logging**.
+**MaintX** is an industrial cybersecurity platform engineered for Operational Technology (OT), Industrial Control Systems (ICS), and SCADA environments. It enforces *Zero-Trust Maintenance Accountability*, *PLC Logic Integrity Verification*, and *Tamper-Evident Cryptographic Audit Logging*.
 
 ---
 
