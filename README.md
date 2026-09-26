@@ -173,7 +173,7 @@ Total:                      118 passed
 | **SUPERVISOR** | Work order approvals, session authorization, verification sign-offs |
 | **MAINTENANCE_ENGINEER** | Execute assigned maintenance sessions, deploy approved PLC programs |
 | **SECURITY_ANALYST** | Read-only change investigation, anomaly review, threat mitigation |
-| **AUDITOR** | Read-only compliance inspection, cryptographic hash ledger audit |
+| **AUDITOR** | Read-only compliance inspection, cryptographic hash audit |
 
 *All roles are validated server-side against database profiles. Frontend role claims are never trusted.*
 
